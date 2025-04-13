@@ -1,0 +1,43 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+    id Int @id @default(autoincrement())
+    email String @unique
+    first_name String
+    last_name String
+    created_at DateTime
+    last_login DateTime
+    job_title String
+    company String
+    password_hash String
+    auth_method String
+    problem_request ProblemRequest?
+}
+
+model ProblemRequest {
+    id Int @id @default(autoincrement())
+    user User @relation(fields: [user_id], references: [id])
+    user_id Int @unique
+    role_description String
+    problem_description String
+    problem_parameters String
+    problem_insights String
+    solution_summary String
+    problem_data ProblemData?
+}
+
+model ProblemData {
+    id Int @id @default(autoincrement())
+    csv_file_url String
+    data_analysis String
+    solution_file_url String
+    problem_request ProblemRequest @relation(fields: [problem_request_id], references: [id])
+    problem_request_id Int @unique
+}
