@@ -18,26 +18,70 @@ model User {
     company String
     password_hash String
     auth_method String
-    problem_request ProblemRequest?
+    problem_request ProblemRequest[]
+    insight_feedback InsightFeedback[]
 }
 
 model ProblemRequest {
     id Int @id @default(autoincrement())
     user User @relation(fields: [user_id], references: [id])
-    user_id Int @unique
+    user_id Int
     role_description String
     problem_description String
     problem_parameters String
     problem_insights String
     solution_summary String
-    problem_data ProblemData?
+    problem_data DataUpload?
+    created_at DateTime
+    processed_at DateTime
+    status Status
+    metric_temp MetricTemplate?
 }
 
-model ProblemData {
+
+model DataUpload {
     id Int @id @default(autoincrement())
-    csv_file_url String
-    data_analysis String
-    solution_file_url String
     problem_request ProblemRequest @relation(fields: [problem_request_id], references: [id])
     problem_request_id Int @unique
+    file_url String
+    filename String
+    source_type String
+    uploaded_at DateTime
+    data_analasys_result DataAnalysisResult?
+}
+
+model DataAnalysisResult {
+    id Int @id @default(autoincrement())
+    data_upload DataUpload @relation(fields: [data_upload_id], references: [id])
+    data_upload_id Int @unique
+    summary String
+    inferred_schema Json
+    outliers_found String[]
+    metrics_highlighted String[]
+    analysed_at DateTime
+}
+
+model InsightFeedback {
+    id Int @id @default(autoincrement())
+    user User @relation(fields: [user_id], references: [id])
+    user_id Int
+    rating Int
+    comment String
+}
+
+model MetricTemplate {
+    id Int @id @default(autoincrement())
+    problem_request ProblemRequest @relation(fields: [problem_request_id], references: [id])
+    problem_request_id Int @unique
+    name String
+    description String
+    source Int
+    metric_type String
+}
+
+enum Status {
+    PENDING
+    PROCESSING
+    DONE
+    DID_NOT_MEET
 }
