@@ -1,3 +1,16 @@
+/**
+ * The Enum object for Status of a ProblemRequest. 
+ * Can be one of the following:
+ * - PENDING
+ * - PROCESSING
+ * - DONE
+ * - DID_NOT_MEET
+ */
+export type Status = 'PENDING' | 'PROCESSING' | 'DONE' | 'DID_NOT_MEET';
+
+/**
+ * The DTO object for User model that is not client facing
+ */
 export interface UserDTO {
     id: number;
     email: string;
@@ -7,6 +20,9 @@ export interface UserDTO {
     company: string;
 }
 
+/**
+ * The DTO object for ProblemRequest that is not client facing
+ */
 export interface ProblemRequestDTO {
     id: number;
     user: number;
@@ -15,6 +31,25 @@ export interface ProblemRequestDTO {
     problem_parameters: string;
     problem_insights: string;
     solution_summary: string;
-    status: object;
+    status: Status;
+}
+
+/**
+ * The Create request body of the CRUD operation for ProblemRequest
+ */
+export interface CreateProblemRequestBody {
+    userId: number;
+    roleDescription: string;
+    problemDescription: string;
+    problemParameters?: string;
+}
+
+/**
+ * The Read response body of the CRUD operation for ProblemRequest
+ */
+export interface ReadProblemRequestResponse {
+    id: number;
+    status: Status;
+    solutionSummary?: string;
 }
 

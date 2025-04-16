@@ -4,6 +4,6 @@ import { getUploadById, createUpload } from '../../controllers/uploadController'
 const router = express.Router();
 
 router.get('/:id', getUploadById);
-router.post('/', createUploadRequest);
+router.post('/', createUpload);
 
 export default router;
