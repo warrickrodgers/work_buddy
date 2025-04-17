@@ -1,5 +1,9 @@
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
+
+/**
+ * Main seeding function
+ */
 async function main() {
     const testUser = await prisma.user.upsert({
         where: { email: 'test@workbuddy.io' },

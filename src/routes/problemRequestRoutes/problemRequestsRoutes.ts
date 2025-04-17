@@ -1,9 +1,14 @@
 import express, { Request, Response } from 'express';
-import { getProblemRequestsById, createProblemRequest } from '../../controllers/problemRequestController';
+import { 
+    getProblemRequestById,
+    getProblemRequestsByUserId,
+    createProblemRequest 
+} from '../../controllers/problemRequestController';
 
 const router = express.Router();
 
-router.get('/:id', getProblemRequestsById);
+router.get('/:id', getProblemRequestById);
+router.get('?user_id=:user_id', getProblemRequestsByUserId);
 router.post('/', createProblemRequest);
 
 export default router;
