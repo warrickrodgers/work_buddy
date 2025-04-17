@@ -12,8 +12,15 @@ async function main() {
             company: 'WorkBuddy',
             password_hash: 'g1bb3ri$h',
             auth_method: 'none',
-            problem_request:
         },
     })
   console.log({ testUser })
 }
+
+main().then(() => {
+    console.log('🌱 Seeding completed')
+    return prisma.$disconnect()
+}).catch((e) => {
+    console.error('❌ Seeding failed', e)
+    return prisma.$disconnect().finally(() => process.exit(1))
+})
