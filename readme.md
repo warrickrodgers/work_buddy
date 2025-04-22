@@ -1,7 +1,7 @@
 ## Setup
 
 ### Windows
-First things first, you'll need WSL as it makes life much easier. For congruency, this was built with Ubuntu 24 lts.
+First things first, you'll need WSL as it makes life much easier. For congruency, this was built with `Ubuntu 24 lts`.
 
 ### NodeJS
 Start with a good ol `sudo apt update && sudo apt upgrade` followed by  a `sudo apt install nodejs` and a `sudo apt install npm`. This should be sufficient, but verify versioning and try `npm install` in the root project directory.
@@ -21,7 +21,7 @@ DATABASE_URL="postgresql://postgres:password@localhost:5432/dev"
 
 And then make sure to create a `dev` db in Postgres. Start with `sudo passwd postgres`, create your password, and then `sudo -u postgres psql` to log in. Create a DB with `create database dev;` in psql. Don't forget to terminate your `db` command with a `;`. I had to learn that the hard way.
 
-Oncxe your DB is created run the usual Prisma commands. If you're stuck I followed either ChatGPT or thhe following:
+Once your DB is created run the usual Prisma commands. If you're stuck I followed either ChatGPT or thhe following:
 [Prisma DB Seeding](https://www.prisma.io/docs/orm/prisma-migrate/workflows/seeding)
 
 If the DB Seeding is successful you should see output as follows:
