@@ -1,6 +1,7 @@
 import { json, Request, Response } from 'express';
 import { HttpError } from "../lib/errors";
 import { PrismaClient } from '@prisma/client';
+import { Status } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
@@ -69,7 +70,7 @@ export const createProblemRequest = async (req: Request, res: Response) => {
                 problem_parameters: parametrizeProblemInsights(req.body.problem_description),
                 problem_insights: "", 
                 solution_summary: "",
-                status: "PENDING",
+                status: Status.PENDING,
     
             }
         });
