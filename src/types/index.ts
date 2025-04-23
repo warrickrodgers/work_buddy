@@ -21,6 +21,16 @@ export interface UserDTO {
 }
 
 /**
+ * The User SignUp request body for the create of CRUD operations
+ */
+export interface UserSignupReqBody {
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+}
+
+/**
  * The DTO object for ProblemRequest that is not client facing
  */
 export interface ProblemRequestDTO {
