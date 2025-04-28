@@ -98,9 +98,9 @@ export default function Login() {
                     </FormItem>
                   )}
                 />
-                <a href="#" className="mb-4 text-s">Forgot password?</a>
-                <Button type="submit" className="w-full">Login</Button>
-                <p>Don't have an account? <a href="/SignUp">Sign up</a></p>
+                
+                <Button type="submit" className="w-full" variant="secondary">Login</Button>
+                <p>Don't have an account? <a href="/SignUp" className="underline underline-offset-4">Sign up</a></p>
               </form>
             </Form>
           </CardContent>
