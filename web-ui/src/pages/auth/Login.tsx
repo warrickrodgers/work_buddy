@@ -98,7 +98,7 @@ export default function Login() {
                     </FormItem>
                   )}
                 />
-                
+                <a href="/ForgotPassword" className="underline underline-offset-4">Forgot Password?</a>
                 <Button type="submit" className="w-full" variant="secondary">Login</Button>
                 <p>Don't have an account? <a href="/SignUp" className="underline underline-offset-4">Sign up</a></p>
               </form>

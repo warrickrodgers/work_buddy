@@ -1,7 +1,6 @@
 import { json, Request, Response } from 'express';
 import { HttpError } from "../lib/errors";
 import { PrismaClient } from '@prisma/client';
-import { Status } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
@@ -19,9 +18,10 @@ export const getProblemRequestById = async (req: Request, res: Response) => {
             where: {id: Number(req.params.id) }
         })
         res.status(200).json(upload);
-    } catch (err) {
+    } catch (err: unknown) {
         const status = err instanceof HttpError ? err.status : 500;
-        res.status(status).json({ error: err.message ?? "Something went wrong" });
+        const message = err instanceof Error ? err.message : "Something went wrong";
+        res.status(status).json({ error: message });
     }
 }
 
@@ -40,9 +40,10 @@ export const getProblemRequestsByUserId = async (req: Request, res: Response) =>
             where: {user_id: Number(req.params.user_id) }
         })
         res.status(200).json(upload);
-    } catch (err) {
+    } catch (err: unknown) {
         const status = err instanceof HttpError ? err.status : 500;
-        res.status(status).json({ error: err.message ?? "Something went wrong" });
+        const message = err instanceof Error ? err.message : "Something went wrong";
+        res.status(status).json({ error: message });
     }
 }
 
@@ -70,7 +71,7 @@ export const createProblemRequest = async (req: Request, res: Response) => {
                 problem_parameters: parametrizeProblemInsights(req.body.problem_description),
                 problem_insights: "", 
                 solution_summary: "",
-                status: Status.PENDING,
+                status: "PENDING",
     
             }
         });

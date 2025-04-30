@@ -1,14 +1,12 @@
 import express, { Request, Response } from 'express';
 import { 
-    getProblemRequestById,
-    getProblemRequestsByUserId,
-    createProblemRequest 
-} from '../../controllers/problemRequestController';
+    getSignInUser,
+    createNewUser
+} from '../../controllers/authController';
 
 const router = express.Router();
 
-router.get('/:id', getProblemRequestById);
-router.get('?user_id=:user_id', getProblemRequestsByUserId);
-router.post('/', createProblemRequest);
+router.post('/signin', getSignInUser);
+router.post('/signup', createNewUser);
 
 export default router;
