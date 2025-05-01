@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import api from "@/lib/api"
 
 
 
@@ -43,6 +44,9 @@ export default function Login() {
     e.preventDefault()
     // TODO: Hook into your backend POST /api/auth/login
     console.log({ email, password })
+    const response = await api.post("/auth/signin", { data: { email, password } });
+    localStorage.setItem("token", response.data.token);
+    return response.data;
   }
 
   return (
@@ -90,7 +94,7 @@ export default function Login() {
                           id="password"
                           type="password"
                           value={password}
-                          onChange={(e) => setEmail(e.target.value)}
+                          onChange={(e) => setPassword(e.target.value)}
                           required
                         />
                       </FormControl>
