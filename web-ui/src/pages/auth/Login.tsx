@@ -1,5 +1,6 @@
 // src/pages/Login.tsx
 import { useState } from "react"
+import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -18,7 +19,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import api from "@/lib/api"
 
 
-
 const FormSchema = z.object({
   username: z.string().min(2, {
     message: "Username must be at least 2 characters.",
@@ -31,6 +31,7 @@ const FormSchema = z.object({
 export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -42,11 +43,14 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Hook into your backend POST /api/auth/login
-    console.log({ email, password })
-    const response = await api.post("/auth/signin", { data: { email, password } });
-    localStorage.setItem("token", response.data.token);
-    return response.data;
+    try {
+      console.log({email , password})
+      const response = await api.post("/auth/signin", { data: { email, password } });
+      localStorage.setItem("token", response.data.token);
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Login failed:", err);
+    }
   }
 
   return (

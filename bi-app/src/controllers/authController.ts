@@ -48,9 +48,9 @@ export const createNewUser = async (req: Request, res: Response) => {
  * @param res - Response body
  * @returns 
  */
-export const getSignInUser = async (req: Request, res: Response) => {
+export const createSignInUser = async (req: Request, res: Response) => {
     try {
-        const { email, password} = req.body;
+        const { email, password} = req.body.data;
         const user = await prisma.user.findUnique({
             where: {email}
         });
@@ -71,4 +71,13 @@ export const getSignInUser = async (req: Request, res: Response) => {
         console.log(err);
         res.status(500).json({error: 'There was an error signing in!'});
     }
+}
+
+/**
+ * 
+ * @param req 
+ * @param res 
+ */
+export const createSignoutUser = async (req: Request, res: Response) => {
+
 }
