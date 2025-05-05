@@ -74,10 +74,32 @@ export const createSignInUser = async (req: Request, res: Response) => {
 }
 
 /**
- * 
+ * TODO- Update documentation
  * @param req 
  * @param res 
  */
 export const createSignoutUser = async (req: Request, res: Response) => {
 
+}
+
+/**
+ * TODO- Update documentation
+ * @param req 
+ * @param res 
+ */
+export const getVerifyToken = async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+
+    if (!token) {
+        res.status(401).json({ message: 'Missing token' });
+        return;
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        res.status(200).json({ user: decoded });
+    } catch {
+        res.status(401).json({ message: 'Invalid or expired token' });
+    }
 }
