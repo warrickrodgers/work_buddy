@@ -106,8 +106,8 @@ export default function Login() {
                     </FormItem>
                   )}
                 />
-                <a href="/ForgotPassword" className="underline underline-offset-4">Forgot Password?</a>
-                <Button type="submit" className="w-full" variant="secondary">Login</Button>
+                <a href="/ForgotPassword" className="underline py-4 underline-offset-4">Forgot Password?</a>
+                <Button type="submit" className="w-full py-2" variant="outline">Login</Button>
                 <p>Don't have an account? <a href="/SignUp" className="underline underline-offset-4">Sign up</a></p>
               </form>
             </Form>
