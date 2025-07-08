@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-"use client";
 import {
   Dropzone,
   DropZoneArea,
@@ -37,9 +36,14 @@ function NewUploadInsetPage() {
     },
     validation: {
       accept: {
-        "image/*": [".png", ".jpg", ".jpeg"],
+        "application/pdf": [".pdf"],
+        "application/msword": [".doc"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+        "application/vnd.ms-excel": [".xls"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+        "text/plain": [".txt"],
       },
-      maxSize: 10 * 1024 * 1024,
+      maxSize: 5 * 1024 * 1024,
       maxFiles: 10,
     },
   });
@@ -50,7 +54,7 @@ function NewUploadInsetPage() {
         <CardHeader>
           <CardTitle>Upload Files</CardTitle>
           <CardDescription>
-            Upload up to <b>10</b> files to help the AI model develop the training plan.
+            Upload up to <b>10</b> files smaller than <b>5MB</b> each to help the AI model develop the training plan. 
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -105,16 +109,6 @@ function NewUploadInsetPage() {
               ))}
             </DropzoneFileList>
           </Dropzone>
-          <div className="py-4">
-            <form>
-              <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                <Label htmlFor="picture">File:</Label>
-                <Input id="picture" type="file" />
-                </div>
-              </div>
-            </form>
-          </div>
         </CardContent>
         <CardFooter className="flex-col gap-2">
           <Button variant="secondary" type="submit" className="w-30">
