@@ -20,6 +20,8 @@
 
 /* Theme variables */
 :root {
+  --background: hsl(0 0% 98%);
+  --foreground: hsl(240 5.9% 10%);
   --primary: hsl(0 0% 98%);
   --primary-foreground: hsl(240 5.9% 10%);
   --secondary: hsl(240 5.9% 10%);

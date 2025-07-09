@@ -18,12 +18,10 @@ import {
   DropzoneMessage,
   DropzoneRemoveFile,
   DropzoneTrigger,
-  InfiniteProgress,
   useDropzone,
 } from "@/components/ui/dropzone";
 import { CloudUploadIcon, Trash2Icon } from "lucide-react";
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import api from "@/lib/api"
 
 function NewUploadInsetPage() {
   const dropzone = useDropzone({
@@ -47,6 +45,25 @@ function NewUploadInsetPage() {
       maxFiles: 10,
     },
   });
+
+  const handleUpload = async () => {
+    if(!dropzone.fileStatuses || dropzone.fileStatuses?.length !== 0) {
+      const formData = new FormData();
+      const filesToUpload = dropzone.fileStatuses.map((fileStatus) => fileStatus.file);
+      filesToUpload.forEach((file) => {
+        formData.append('files', file);
+      });
+      api.post('/api/file-upload', {
+        body: formData,
+      })
+        .then((response) => response.data())
+        .then((data) => console.log(data))
+        .catch((error) => console.error('Error uploading files:', error));
+    }
+    else {
+      console.error('Nothing to upload')
+    }
+  }
 
   return (
     <div className="min-h-screen flex space-y-4 items-center justify-center">
@@ -111,7 +128,7 @@ function NewUploadInsetPage() {
           </Dropzone>
         </CardContent>
         <CardFooter className="flex-col gap-2">
-          <Button variant="secondary" type="submit" className="w-30">
+          <Button variant="outline" onClick={handleUpload} className="w-30">
             Upload
           </Button>
         </CardFooter>

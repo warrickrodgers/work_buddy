@@ -8,6 +8,7 @@ import Dashboard from './pages/dashboard/Dashboard';
 import './App.css'
 import UploadsInsetPage  from './pages/dashboard/dashPages/Uploads/Uploads';
 import NewUploadInsetPage from './pages/dashboard/dashPages/Uploads/NewUpload';
+import './App.css';
 
 function App() {
   return (
