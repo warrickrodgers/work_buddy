@@ -15,6 +15,7 @@ import {
   useDropzone as rootUseDropzone,
 } from "react-dropzone";
 import { Button } from "./button";
+import { ReactNode } from "react";
 
 type DropzoneResult<TUploadRes, TUploadError> =
   | {
@@ -655,7 +656,9 @@ const DropzoneMessage = forwardRef<HTMLParagraphElement, DropzoneMessageProps>(
 );
 DropzoneMessage.displayName = "DropzoneMessage";
 
-interface DropzoneRemoveFileProps {}
+interface DropzoneRemoveFileProps extends React.ComponentPropsWithoutRef<'button'> {
+  children?: ReactNode;
+}
 
 const DropzoneRemoveFile = forwardRef<
   HTMLButtonElement,
@@ -679,14 +682,16 @@ const DropzoneRemoveFile = forwardRef<
       )}
       variant="secondary"
     >
-      {/* {props.children} */}
+      {props.children}
       <span className="sr-only">Remove file</span>
     </Button>
   );
 });
 DropzoneRemoveFile.displayName = "DropzoneRemoveFile";
 
-interface DropzoneRetryFileProps {}
+interface DropzoneRetryFileProps extends React.ComponentPropsWithoutRef<'button'> {
+  children?: ReactNode;
+}
 
 const DropzoneRetryFile = forwardRef<HTMLButtonElement, DropzoneRetryFileProps>(
   ({ ...props }, ref) => {
@@ -714,7 +719,7 @@ const DropzoneRetryFile = forwardRef<HTMLButtonElement, DropzoneRetryFileProps>(
         )}
         variant="outline"
       >
-        {/* {props.children} */}
+        {props.children}
         <span className="sr-only">Retry</span>
       </Button>
     );

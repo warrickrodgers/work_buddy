@@ -1,5 +1,6 @@
 "use client"
 import { Button } from "@/components/ui/button"
+import { useState } from 'react';
 import {
   Card,
   CardAction,
@@ -20,10 +21,13 @@ import {
   DropzoneTrigger,
   useDropzone,
 } from "@/components/ui/dropzone";
-import { CloudUploadIcon, Trash2Icon } from "lucide-react";
+import { CloudUploadIcon, Trash2Icon, FileCheck2, FileX2 } from "lucide-react";
 import api from "@/lib/api"
 
 function NewUploadInsetPage() {
+  const [uploading, setUploading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
   const dropzone = useDropzone({
     onDropFile: async (file: File) => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -47,22 +51,35 @@ function NewUploadInsetPage() {
   });
 
   const handleUpload = async () => {
-    if(!dropzone.fileStatuses || dropzone.fileStatuses?.length !== 0) {
+    setUploading(true);
+    if(dropzone.fileStatuses?.length > 0) {
       const formData = new FormData();
       const filesToUpload = dropzone.fileStatuses.map((fileStatus) => fileStatus.file);
       filesToUpload.forEach((file) => {
         formData.append('files', file);
       });
-      api.post('/api/file-upload', {
-        body: formData,
+      api.post('/api/file-upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       })
-        .then((response) => response.data())
-        .then((data) => console.log(data))
-        .catch((error) => console.error('Error uploading files:', error));
+        .then((response) => {
+          if([200, 201].includes(response.status)) {
+            setSuccess(true);
+          }
+          else {
+            setSuccess(false);
+          }
+        })
+        .catch((error) => {
+          setSuccess(false);
+          console.error('Error uploading files:', error);
+        });
     }
     else {
       console.error('Nothing to upload')
     }
+    setUploading(false);
   }
 
   return (
@@ -104,12 +121,14 @@ function NewUploadInsetPage() {
                     <div className="aspect-video animate-pulse bg-black/20" />
                   )}
                   {file.status === "success" && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={file.result}
-                      alt={`uploaded-${file.fileName}`}
-                      className="aspect-video object-cover"
-                    />
+                    <div className="aspect-video bg-muted flex items-center justify-center">
+                      <FileCheck2 className="w-6 h-6" />
+                    </div>
+                  )}
+                  {file.status === "error" && (
+                    <div className="aspect-video bg-muted flex items-center justify-center">
+                      <FileX2 className="w-6 h-6" />
+                    </div>
                   )}
                   <div className="flex items-center justify-between p-2 pl-4">
                     <div className="min-w-0">
@@ -128,8 +147,13 @@ function NewUploadInsetPage() {
           </Dropzone>
         </CardContent>
         <CardFooter className="flex-col gap-2">
-          <Button variant="outline" onClick={handleUpload} className="w-30">
-            Upload
+          <Button 
+            variant="outline" 
+            onClick={handleUpload} 
+            className="w-30"
+            disabled={uploading || dropzone.fileStatuses.length === 0}
+          >
+            {uploading ? "Uploading..." : "Upload"}
           </Button>
         </CardFooter>
       </Card>
