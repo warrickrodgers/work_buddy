@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 /* Animations (optional from shadcn) */
 @layer utilities {
   .animate-in {
@@ -18,6 +20,12 @@
 
 /* Theme variables */
 :root {
+  --background: hsl(0 0% 98%);
+  --foreground: hsl(240 5.9% 10%);
+  --primary: hsl(0 0% 98%);
+  --primary-foreground: hsl(240 5.9% 10%);
+  --secondary: hsl(240 5.9% 10%);
+  --secondary-foreground: hsl(0 0% 98%);
   --sidebar: hsl(0 0% 98%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);
   --sidebar-primary: hsl(240 5.9% 10%);
@@ -30,6 +38,10 @@
 
 /* Dark mode overrides */
 .dark {
+  --primary: hsl(240 5.9% 10%);
+  --primary-foreground: hsl(0 0% 98%);
+  --secondary: hsl(0 0% 98%);
+  --secondary-foreground: hsl(240 5.9% 10%);
   --sidebar: hsl(240 5.9% 10%);
   --sidebar-foreground: hsl(240 4.8% 95.9%);
   --sidebar-primary: hsl(224.3 76.3% 48%);

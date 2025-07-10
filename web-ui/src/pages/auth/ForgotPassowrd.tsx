@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { useNavigate } from 'react-router-dom';
 
 
 
@@ -28,7 +29,9 @@ const FormSchema = z.object({
 })
 
 export default function ForgotPassword() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("")
+  
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -43,6 +46,14 @@ export default function ForgotPassword() {
     // TODO: Hook into your backend POST /api/auth/login
     console.log({ email })
   }
+
+  // const handleCancelClick = {
+  //   try {
+  //     navigate("/login");
+  //   } catch (err) {
+  //     console.error("Navigation failed:", err);
+  //   }
+  // }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -79,7 +90,7 @@ export default function ForgotPassword() {
                   )}
                 />
                 <Button type="submit" className="w-full" variant="default">Reset Password</Button>
-                <Button type="button" className="w-full" variant="secondary">Cancel</Button>
+                <Button type="button" className="w-full" variant="outline">Cancel</Button>
               </form>
             </Form>
           </CardContent>

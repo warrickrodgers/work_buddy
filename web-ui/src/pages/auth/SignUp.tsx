@@ -146,7 +146,7 @@ export default function SignUp() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" variant="secondary">Signup</Button>
+                <Button type="submit" className="w-full" variant="outline">Signup</Button>
                 <p>Already have an account? <a href="/Login" className="underline underline-offset-4">Login</a></p>
               </form>
             </Form>
