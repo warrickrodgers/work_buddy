@@ -45,7 +45,7 @@ export default function Login() {
     e.preventDefault()
     try {
       console.log({email , password})
-      const response = await api.post("/auth/signin", { data: { email, password } });
+      const response = await api.post("/auth/signin", { email, password });
       localStorage.setItem("token", response.data.token);
       navigate("/dashboard");
     } catch (err) {

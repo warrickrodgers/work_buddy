@@ -27,6 +27,7 @@ model ProblemRequest {
     id Int @id @default(autoincrement())
     user User @relation(fields: [user_id], references: [id])
     user_id Int
+    title String
     role_description String
     problem_description String
     problem_parameters String
@@ -35,7 +36,7 @@ model ProblemRequest {
     problem_data DataUpload?
     created_at DateTime @default(now())
     processed_at DateTime @default(now())
-    status Status
+    problem_status ProblemRequestStatus
     metric_temp MetricTemplate?
 }
 
@@ -83,7 +84,7 @@ model MetricTemplate {
     created_at DateTime @default(now())
 }
 
-enum Status {
+enum ProblemRequestStatus {
     PENDING
     PROCESSING
     DONE
