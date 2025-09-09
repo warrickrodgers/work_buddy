@@ -33,7 +33,7 @@ model ProblemRequest {
     problem_parameters String
     problem_insights String
     solution_summary String
-    problem_data DataUpload?
+    problem_data DataUpload[]
     created_at DateTime @default(now())
     processed_at DateTime @default(now())
     problem_status ProblemRequestStatus
@@ -44,7 +44,7 @@ model ProblemRequest {
 model DataUpload {
     id Int @id @default(autoincrement())
     problem_request ProblemRequest @relation(fields: [problem_request_id], references: [id])
-    problem_request_id Int @unique
+    problem_request_id Int
     file_url String
     filename String
     source_type String

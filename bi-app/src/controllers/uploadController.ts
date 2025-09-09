@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { HttpError } from '../lib/errors';
+import { connect } from 'http2';
 
 const prisma = new PrismaClient();
 
@@ -34,8 +35,9 @@ export const getUploadByProblemRequestId = (req: Request, res: Response) => {
  * @param req - Request body
  * @param res - Response body
  */
-export const createUpload = (req: Request, res: Response) => {
+export const createUpload = async (req: Request, res: Response) => {
     try {
+        const { problem_request_id } = req.body;
         const userId = (req as any).user?.userId;
         const files = req.files as Express.Multer.File[];
         if (!files || files.length === 0) {
@@ -43,11 +45,13 @@ export const createUpload = (req: Request, res: Response) => {
             return;
         }
 
-        const uploadRecords = Promise.all(
+        const uploadRecords = await Promise.all(
             files.map(file =>
                 prisma.dataUpload.create({
                 data: {
-                    problem_request:{},
+                    problem_request:{
+                        connect: {id: parseInt(problem_request_id)}
+                    },
                     filename: file.originalname,
                     file_url: file.path,
                     source_type: file.mimetype
@@ -55,6 +59,7 @@ export const createUpload = (req: Request, res: Response) => {
                 })
             )
         );
+        console.log(uploadRecords)
       
         res.status(201).json({ message: 'Files uploaded successfully', uploads: uploadRecords });
         return;
