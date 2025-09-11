@@ -27,6 +27,7 @@ import api from "@/lib/api"
 function NewUploadInsetPage() {
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [problemRequestId, setProblemRequestId] = useState<number>(2)
 
   const dropzone = useDropzone({
     onDropFile: async (file: File) => {
@@ -54,11 +55,12 @@ function NewUploadInsetPage() {
     setUploading(true);
     if(dropzone.fileStatuses?.length > 0) {
       const formData = new FormData();
+      formData.append('problem_request_id', problemRequestId.toString());
       const filesToUpload = dropzone.fileStatuses.map((fileStatus) => fileStatus.file);
       filesToUpload.forEach((file) => {
         formData.append('files', file);
       });
-      api.post('/api/file-upload', formData, {
+      api.post('/uploads/file-upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
