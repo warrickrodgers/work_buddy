@@ -66,12 +66,13 @@ export const createProblemRequest = async (req: Request, res: Response) => {
         const newCreateProblem = await prisma.problemRequest.create({
             data: {
                 user_id: req.body.user_id,
+                title: 'SSample problem request',
                 role_description: req.body.role_description,
                 problem_description: req.body.problem_description,
                 problem_parameters: parametrizeProblemInsights(req.body.problem_description),
                 problem_insights: "", 
                 solution_summary: "",
-                status: "PENDING",
+                problem_status: "PENDING",
     
             }
         });

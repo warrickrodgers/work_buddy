@@ -50,7 +50,7 @@ export const createNewUser = async (req: Request, res: Response) => {
  */
 export const createSignInUser = async (req: Request, res: Response) => {
     try {
-        const { email, password} = req.body.data;
+        const { email, password} = req.body;
         const user = await prisma.user.findUnique({
             where: {email}
         });
