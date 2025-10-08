@@ -74,7 +74,7 @@ const appNavigationData = {
         },
         {
           title: "Documents",
-          url: "#",
+          url: "/dashboard/uploads/documments",
         },
         {
           title: "Upload New",

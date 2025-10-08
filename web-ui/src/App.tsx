@@ -9,6 +9,7 @@ import './App.css'
 import UploadsInsetPage  from './pages/dashboard/dashPages/Uploads/Uploads';
 import NewUploadInsetPage from './pages/dashboard/dashPages/Uploads/NewUpload';
 import './App.css';
+import DocumentsInsetPage from './pages/dashboard/dashPages/Uploads/Documents';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           {/* Nested routes within Dashboard (the "inset") */}
           <Route path="/dashboard/uploads" element={<UploadsInsetPage />}></Route>
           <Route path="/dashboard/uploads/new-upload" element={<NewUploadInsetPage />}/>
+          <Route path="/dashboard/uploads/documments" element={<DocumentsInsetPage />}/>
         </Route>
       </Routes>
     </Router>
