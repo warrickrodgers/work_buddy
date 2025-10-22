@@ -10,30 +10,35 @@ import UploadsInsetPage  from './pages/dashboard/dashPages/Uploads/Uploads';
 import NewUploadInsetPage from './pages/dashboard/dashPages/Uploads/NewUpload';
 import './App.css';
 import DocumentsInsetPage from './pages/dashboard/dashPages/Uploads/Documents';
+import { WorkBuddyChat } from './pages/dashboard/dashPages/WorkBuddyChats.tsx/WorkBuddyChat';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path='/' element={< Home/>}></Route>
-        <Route path="/signup" element={< SignUp/>}></Route>
-        <Route path="/login" element={< Login/>}></Route>
-        <Route path="/forgotPassword" element={< ForgotPassword/>}></Route>
-        <Route 
-           path="/dashboard"
-           element={
-             <PrivateRoute>
-               <Dashboard />
-             </PrivateRoute>
-           }
-        >
-          {/* Nested routes within Dashboard (the "inset") */}
-          <Route path="/dashboard/uploads" element={<UploadsInsetPage />}></Route>
-          <Route path="/dashboard/uploads/new-upload" element={<NewUploadInsetPage />}/>
-          <Route path="/dashboard/uploads/documments" element={<DocumentsInsetPage />}/>
-        </Route>
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path='/' element={< Home/>}></Route>
+          <Route path="/signup" element={< SignUp/>}></Route>
+          <Route path="/login" element={< Login/>}></Route>
+          <Route path="/forgotPassword" element={< ForgotPassword/>}></Route>
+          <Route 
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          >
+            {/* Nested routes within Dashboard (the "inset") */}
+            <Route path="/dashboard/workbuddychats/workbuddychat" element={<WorkBuddyChat />}/>
+            <Route path="/dashboard/uploads" element={<UploadsInsetPage />}></Route>
+            <Route path="/dashboard/uploads/new-upload" element={<NewUploadInsetPage />}/>
+            <Route path="/dashboard/uploads/documents" element={<DocumentsInsetPage />}/>
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   )
 }
 

@@ -1,5 +1,6 @@
 // src/pages/Login.tsx
-import { useState } from "react"
+import { useState } from "react";
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -29,6 +30,7 @@ const FormSchema = z.object({
 })
 
 export default function Login() {
+  const { login } = useAuth();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const navigate = useNavigate();
@@ -46,7 +48,9 @@ export default function Login() {
     try {
       console.log({email , password})
       const response = await api.post("/auth/signin", { email, password });
-      localStorage.setItem("token", response.data.token);
+      const { token, user } = response.data;
+      login(token, user);
+      localStorage.setItem("token", token);
       navigate("/dashboard");
     } catch (err) {
       console.error("Login failed:", err);

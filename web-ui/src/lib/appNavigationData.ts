@@ -27,6 +27,11 @@ const appNavigationData = {
       icon: Gauge
     },
     {
+      title: "Chat",
+      url: "/dashboard/workbuddychats/workbuddychat",
+      icon: Bot
+    },
+    {
       title: "Challenges",
       url: "#",
       icon: Bot,
@@ -74,7 +79,7 @@ const appNavigationData = {
         },
         {
           title: "Documents",
-          url: "/dashboard/uploads/documments",
+          url: "/dashboard/uploads/documents",
         },
         {
           title: "Upload New",

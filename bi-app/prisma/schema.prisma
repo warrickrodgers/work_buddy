@@ -21,6 +21,7 @@ model User {
     auth_method String
     problem_request ProblemRequest[]
     insight_feedback InsightFeedback[]
+    conversations Conversation[]
 }
 
 model ProblemRequest {
@@ -89,4 +90,31 @@ enum ProblemRequestStatus {
     PROCESSING
     DONE
     DID_NOT_MEET
+}
+
+model Conversation {
+  id            Int       @id @default(autoincrement())
+  user          User      @relation(fields: [user_id], references: [id])
+  user_id       Int
+  title         String    @default("New Conversation")
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  messages      ChatMessage[]
+  is_archived   Boolean   @default(false)
+}
+
+model ChatMessage {
+  id              Int           @id @default(autoincrement())
+  conversation    Conversation  @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  conversation_id Int
+  role            MessageRole
+  content         String        @db.Text
+  created_at      DateTime      @default(now())
+  
+  @@index([conversation_id])
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
 }
