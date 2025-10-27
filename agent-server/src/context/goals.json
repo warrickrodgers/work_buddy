@@ -1,0 +1,34 @@
+{
+  "shortTerm": [
+    "Implement basic data analysis pipeline",
+    "Set up OpenAI integration",
+    "Create response parsing and validation",
+    "Implement health check endpoints"
+  ],
+  "longTerm": [
+    "Achieve 95% analysis accuracy",
+    "Support multiple LLM providers",
+    "Implement advanced prompt engineering",
+    "Enable real-time analysis capabilities",
+    "Expand to cloud-native deployment",
+    "Integrate with enterprise knowledge bases",
+    "Support multimodal data analysis"
+  ],
+  "quarterly": [
+    {
+      "goal": "Complete MVP with basic analysis features",
+      "deadline": "2025-Q2",
+      "metrics": ["Functionality coverage", "Performance benchmarks"]
+    },
+    {
+      "goal": "Integrate advancedAI models",
+      "deadline": "2025-Q3",
+      "metrics": ["Model accuracy", "Response time"]
+    },
+    {
+      "goal": "Achieve production readiness",
+      "deadline": "2025-Q4",
+      "metrics": ["Uptime SLA", "Security compliance"]
+    }
+  ]
+}
