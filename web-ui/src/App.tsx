@@ -9,7 +9,6 @@ import './App.css'
 import UploadsInsetPage  from './pages/dashboard/dashPages/Uploads/Uploads';
 import NewUploadInsetPage from './pages/dashboard/dashPages/Uploads/NewUpload';
 import './App.css';
-import DocumentsInsetPage from './pages/dashboard/dashPages/Uploads/Documents';
 import { WorkBuddyChat } from './pages/dashboard/dashPages/WorkBuddyChats.tsx/WorkBuddyChat';
 import { AuthProvider } from './context/AuthContext';
 
@@ -34,7 +33,6 @@ function App() {
             <Route path="/dashboard/workbuddychats/workbuddychat" element={<WorkBuddyChat />}/>
             <Route path="/dashboard/uploads" element={<UploadsInsetPage />}></Route>
             <Route path="/dashboard/uploads/new-upload" element={<NewUploadInsetPage />}/>
-            <Route path="/dashboard/uploads/documents" element={<DocumentsInsetPage />}/>
           </Route>
         </Routes>
       </Router>

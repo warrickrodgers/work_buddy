@@ -2,11 +2,16 @@ import {
   BookOpen,
   Bot,
   Command,
+  CompassIcon,
+  DraftingCompass,
+  FolderUp,
   Frame,
   Gauge,
   icons,
   LifeBuoy,
   Map,
+  MessagesSquare,
+  Microscope,
   PieChart,
   Send,
   Settings2,
@@ -29,12 +34,12 @@ const appNavigationData = {
     {
       title: "Chat",
       url: "/dashboard/workbuddychats/workbuddychat",
-      icon: Bot
+      icon: MessagesSquare
     },
     {
       title: "Challenges",
       url: "#",
-      icon: Bot,
+      icon: Microscope,
       isActive: false,
       items: [
         {
@@ -46,7 +51,7 @@ const appNavigationData = {
     {
       title: "Solutions",
       url: "#",
-      icon: SquareTerminal,
+      icon: CompassIcon,
       isActive: false,
       items: [
         {
@@ -66,7 +71,7 @@ const appNavigationData = {
     {
       title: "Uploads",
       url: "/dashboard/uploads",
-      icon: BookOpen,
+      icon: FolderUp,
       isActive: false,
       items: [
         {
@@ -76,10 +81,6 @@ const appNavigationData = {
         {
           title: "Training Plans",
           url: "#",
-        },
-        {
-          title: "Documents",
-          url: "/dashboard/uploads/documents",
         },
         {
           title: "Upload New",

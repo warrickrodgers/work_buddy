@@ -414,7 +414,7 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Ask about team efficiency, productivity tips, or workflow improvements..."
-              className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-4 pr-12 focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] leading-6"
+              className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-4 pr-14 focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] leading-6"
               rows={1}
               disabled={!conversationId}
             />
@@ -422,8 +422,8 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
               onClick={handleSend}
               disabled={!input.trim() || isTyping || !conversationId}
               size="icon"
-              className="absolute bottom-2 right-2 h-8 w-8 rounded-lg hover:opacity-90 disabled:opacity-30"
-              style={{ backgroundColor: '#101828' }}
+              className="absolute top-1/2 -translate-y-1/2 right-3 h-8 w-8 rounded-lg hover:opacity-90 disabled:opacity-30"
+              style={{ color: '#ffffff', backgroundColor: '#101828' }}
             >
               <ArrowUp className="w-4 h-4" />
             </Button>
