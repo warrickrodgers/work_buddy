@@ -1,15 +1,37 @@
-// Core logic for interpreting uploaded data
+import { chromaService } from './';
+import { logger } from '../utils/logger';
 
-export class AnalysisService {
-  // TODO: Implement core analysis logic
+export async function analyzeDataWithContext(
+  userId: number,
+  problemRequestId: number,
+  dataDescription: string
+) {
+  try {
+    // Search for similar past insights
+    const similarInsights = await chromaService.searchSimilarInsights(
+      dataDescription,
+      userId,
+      3
+    );
 
-  async analyze(data: any): Promise<any> {
-    console.log('Analyzing data:', data);
-    // Placeholder analysis
-    return {
-      insights: 'Sample analysis results',
-      recommendations: [],
-      confidence: 0.8
-    };
+    // Use similar insights as context for better analysis
+    const context = similarInsights.documents?.[0]?.join('\n') || '';
+    
+    // Your existing analysis logic here
+    const analysis = await performAnalysis(dataDescription, context);
+    
+    // Store the new insight in ChromaDB
+    await chromaService.storeInsight(
+      `insight_${problemRequestId}_${Date.now()}`,
+      userId,
+      problemRequestId,
+      analysis.insight,
+      analysis.category
+    );
+
+    return analysis;
+  } catch (error) {
+    logger.error('Error in analysis with context:', error);
+    throw error;
   }
 }
