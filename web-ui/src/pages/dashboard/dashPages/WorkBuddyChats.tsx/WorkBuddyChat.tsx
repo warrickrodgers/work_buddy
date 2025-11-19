@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Bot, User, ArrowUp, Loader2 } from 'lucide-react';
-import { useAuth } from '../../../../context/AuthContext';
+import api from '@/lib/api';
 
 interface Message {
   id: string;
@@ -21,17 +20,7 @@ interface ConversationCache {
   lastFetched: number;
 }
 
-export function WorkBuddyChat() {
-  const { user, token } = useAuth();
-
-  if (!user || !token) {
-    return <div>Loading...</div>;
-  }
-
-  return <WorkBuddyChatComponent userId={user.id} authToken={token} />;
-}
-
-export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; authToken: string }) {
+export function WorkBuddyChat({ userId }: { userId: number }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -40,12 +29,7 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-  // Initialize Gemini
-  const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
   // Clean up markdown response from LLM
   const cleanMarkdown = (text: string): string => {
@@ -74,7 +58,6 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
     const data: ConversationCache = JSON.parse(cached);
     const now = Date.now();
     
-    // Check if cache is still valid
     if (now - data.lastFetched < CACHE_DURATION) {
       return data;
     }
@@ -90,7 +73,7 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
     localStorage.setItem(`conversation_${userId}`, JSON.stringify(cache));
   };
 
-  // API calls
+  // Fetch or create conversation
   const fetchOrCreateConversation = async () => {
     try {
       // Check cache first
@@ -103,33 +86,15 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
       }
 
       // Fetch user's conversations
-      const response = await fetch(`${API_BASE_URL}/conversations/user/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch conversations');
-
-      const conversations = await response.json();
+      const response = await api.get(`/conversations/user/${userId}`);
+      const conversations = response.data;
 
       if (conversations.length > 0) {
         // Load most recent conversation
         const latestConv = conversations[0];
-        const messagesResponse = await fetch(
-          `${API_BASE_URL}/conversations/${latestConv.id}/messages`,
-          {
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+        const messagesResponse = await api.get(`/conversations/${latestConv.id}/messages`);
 
-        if (!messagesResponse.ok) throw new Error('Failed to fetch messages');
-
-        const data = await messagesResponse.json();
+        const data = messagesResponse.data;
         const formattedMessages = data.messages.map((msg: any) => ({
           id: msg.id.toString(),
           role: msg.role.toLowerCase() as 'user' | 'assistant',
@@ -144,21 +109,12 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
         return latestConv.id;
       } else {
         // Create new conversation
-        const createResponse = await fetch(`${API_BASE_URL}/conversations`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            title: 'New Conversation'
-          })
+        const createResponse = await api.post('/conversations', {
+          user_id: userId,
+          title: 'New Conversation'
         });
 
-        if (!createResponse.ok) throw new Error('Failed to create conversation');
-
-        const newConv = await createResponse.json();
+        const newConv = createResponse.data;
         setConversationId(newConv.id);
         setCachedConversation(newConv.id, []);
         
@@ -166,33 +122,9 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
       }
     } catch (error) {
       console.error('Error loading conversation:', error);
-      // Fallback to local-only mode
       setConversationId(-1);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const saveMessageToBackend = async (convId: number, role: 'USER' | 'ASSISTANT', content: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/conversations/${convId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          role,
-          content
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to save message');
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error saving message:', error);
-      return null;
     }
   };
 
@@ -204,6 +136,7 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
   // Update cache whenever messages change
   useEffect(() => {
     if (conversationId && conversationId > 0 && messages.length > 0) {
+      console.log('Updating cache with', messages.length, 'messages');
       setCachedConversation(conversationId, messages);
     }
   }, [messages, conversationId]);
@@ -233,7 +166,6 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
     const currentInput = input;
     setInput('');
     setIsTyping(true);
@@ -242,44 +174,31 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
       textareaRef.current.style.height = 'auto';
     }
 
-    // Save user message to backend
-    if (conversationId > 0) {
-      saveMessageToBackend(conversationId, 'USER', currentInput);
-    }
+    // Add user message to UI immediately
+    setMessages(prev => [...prev, userMessage]);
 
     try {
-      const history = messages.map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
-      }));
-
-      const chat = model.startChat({
-        history,
-        generationConfig: {
-          maxOutputTokens: 1000,
-          temperature: 0.7,
-        },
+      // Call bi-app API (which will call agent-server internally)
+      const response = await api.post(`/conversations/${conversationId}/messages`, {
+        role: 'USER',
+        content: currentInput
       });
 
-      const result = await chat.sendMessage(currentInput);
-      const response = result.response;
-      const text = cleanMarkdown(response.text());
+      const data = response.data;
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: text,
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Save assistant message to backend
-      if (conversationId > 0) {
-        saveMessageToBackend(conversationId, 'ASSISTANT', text);
+      // Add assistant message to UI
+      if (data.assistantMessage) {
+        const assistantMessage: Message = {
+          id: data.assistantMessage.id.toString(),
+          role: 'assistant',
+          content: cleanMarkdown(data.assistantMessage.content),
+          timestamp: new Date(data.assistantMessage.created_at)
+        };
+        
+        setMessages(prev => [...prev, assistantMessage]);
       }
     } catch (error) {
-      console.error('Error calling Gemini API:', error);
+      console.error('Error sending message:', error);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -314,6 +233,13 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Header */}
+      <div className="border-b bg-white shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <h1 className="text-2xl font-semibold text-slate-800">Team Efficiency Assistant</h1>
+          <p className="text-sm text-slate-500 mt-1">Powered by AI to help improve workplace productivity</p>
+        </div>
+      </div>
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -339,7 +265,7 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
               
               <Card className={`px-4 py-3 max-w-2xl ${
                 message.role === 'user' 
-                  ? 'bg-gray-900 text-white border-gray-900' 
+                  ? 'bg-blue-600 text-white border-blue-600' 
                   : 'bg-white border-slate-200'
               }`}>
                 <div className={`text-sm leading-relaxed prose prose-sm max-w-none ${
@@ -423,7 +349,7 @@ export function WorkBuddyChatComponent({ userId, authToken }: { userId: number; 
               disabled={!input.trim() || isTyping || !conversationId}
               size="icon"
               className="absolute top-1/2 -translate-y-1/2 right-3 h-8 w-8 rounded-lg hover:opacity-90 disabled:opacity-30"
-              style={{ color: '#ffffff', backgroundColor: '#101828' }}
+              style={{color:'#ffffff', backgroundColor: '#101828' }}
             >
               <ArrowUp className="w-4 h-4" />
             </Button>

@@ -1,6 +1,6 @@
 // Basic logging utility
 
-export class Logger {
+class Logger {
   log(level: 'info' | 'warn' | 'error', message: string, data?: any): void {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] ${level.toUpperCase()}: ${message}`, data || '');
@@ -18,3 +18,5 @@ export class Logger {
     this.log('error', message, data);
   }
 }
+
+export const logger = new Logger();
