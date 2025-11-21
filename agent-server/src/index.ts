@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import { logger } from './utils/logger';
+import { chromaService } from './services/chromaService';
+import { loadKnowledgeBase } from './services/knowledgeLoader';
 
 // Import routes
 import healthRoute from './routes/health';
@@ -24,11 +26,21 @@ app.use('/analyze', analyzeRoute);
 app.use('/generate-plan', generatePlanRoute);
 app.use('/api/conversations', conversationRoutes);
 
-// Start server
+// Start server with ChromaDB and knowledge base
 async function startServer() {
   try {
+    // Initialize ChromaDB
+    await chromaService.initialize();
+    logger.info('ChromaDB initialized');
+    
+    // Load knowledge base into ChromaDB
+    await loadKnowledgeBase();
+    logger.info('Knowledge base loaded');
+    
+    // Start Express server
     app.listen(PORT, () => {
       logger.info(`Agent server running on port ${PORT}`);
+      logger.info(`Knowledge base primed with context and frameworks`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
