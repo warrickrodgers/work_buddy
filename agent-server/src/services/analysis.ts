@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { QueryResult, Metadata } from 'chromadb';
 import { chromaService } from './chromaService';
+import { buildAnalysisPrompt } from '../llm/promptBuilder';
 import { logger } from '../utils/logger';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -35,13 +37,13 @@ export async function analyzeDataWithContext(
       undefined,
       3
     );
-
-    // Combine contexts
-    const insightContext = similarInsights.documents?.[0]?.join('\n\n') || '';
-    const knowledgeContext = relevantKnowledge.documents?.[0]?.join('\n\n') || '';
     
-    // Perform analysis with AI
-    const analysis = await performAnalysis(dataDescription, insightContext, knowledgeContext);
+    // Perform analysis with AI - pass QueryResult objects
+    const analysis = await performAnalysis(
+      dataDescription,
+      relevantKnowledge,      // QueryResult type
+      similarInsights         // QueryResult type
+    );
     
     // Store the new insight in ChromaDB
     await chromaService.storeInsight(
@@ -64,55 +66,59 @@ export async function analyzeDataWithContext(
  * Perform AI-powered analysis using Gemini with knowledge base
  */
 async function performAnalysis(
-  dataDescription: string, 
-  insightContext: string,
-  knowledgeContext: string
+  dataDescription: string,
+  knowledgeContext: QueryResult<Metadata> | { documents: never[]; metadatas: never[]; distances: never[] },
+  previousInsights?: QueryResult<Metadata> | { documents: never[]; metadatas: never[]; distances: never[] }
 ): Promise<AnalysisResult> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash',
+      generationConfig: {
+        temperature: 0.3,
+        topP: 0.8,
+        topK: 40,
+        maxOutputTokens: 2048,
+      }
+    });
 
-    const prompt = `You are Simon, a workplace efficiency expert inspired by Simon Sinek's "Start With Why" philosophy.
-
-${knowledgeContext ? `Core Principles and Frameworks:\n${knowledgeContext}\n\n` : ''}
-
-${insightContext ? `Previous Relevant Insights:\n${insightContext}\n\n` : ''}
-
-Current Problem/Data to Analyze:
-${dataDescription}
-
-Using the principles above, analyze this situation and provide:
-1. A clear insight about what this reveals (rooted in purpose and meaning)
-2. The category (Communication, Process, Culture, Skills, Resources, Leadership)
-3. Specific, actionable recommendations that align with "Start With Why" thinking
-
-Format as JSON:
-{
-  "insight": "your insight here",
-  "category": "category name",
-  "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"],
-  "confidence": 0.85
-}`;
+    // Build the prompt with QueryResult contexts
+    const prompt = buildAnalysisPrompt(
+      dataDescription,
+      knowledgeContext,
+      previousInsights
+    );
 
     const result = await model.generateContent(prompt);
     const response = result.response.text();
 
+    logger.info('Raw LLM response:', response.substring(0, 200));
+
+    // Clean the response
+    const cleanedResponse = cleanJsonResponse(response);
+
     // Try to parse as JSON
     try {
-      const parsed = JSON.parse(cleanJsonResponse(response));
+      const parsed = JSON.parse(cleanedResponse);
+      
+      // Validate required fields
+      if (!parsed.insight || !parsed.category || !parsed.recommendations) {
+        throw new Error('Missing required fields in JSON response');
+      }
+
       return {
-        insight: parsed.insight || 'Unable to generate insight',
-        category: parsed.category || 'General',
-        recommendations: parsed.recommendations || [],
-        confidence: parsed.confidence || 0.5
+        insight: parsed.insight,
+        category: parsed.category,
+        recommendations: Array.isArray(parsed.recommendations) 
+          ? parsed.recommendations 
+          : [parsed.recommendations],
+        confidence: parsed.confidence || 0.7
       };
     } catch (parseError) {
-      logger.warn('Failed to parse JSON response, extracting manually');
-      return {
-        insight: response,
-        category: 'General',
-        recommendations: extractRecommendations(response),
-        confidence: 0.6
-      };
+      logger.error('JSON parse error:', parseError);
+      logger.error('Cleaned response:', cleanedResponse);
+      
+      // Fallback: extract manually
+      return extractAnalysisFromText(response);
     }
   } catch (error) {
     logger.error('Error performing analysis:', error);
@@ -121,25 +127,24 @@ Format as JSON:
 }
 
 /**
- * Clean JSON response from markdown code blocks
+ * Clean JSON response from markdown and extra text
  */
 function cleanJsonResponse(text: string): string {
   let cleaned = text.trim();
   
-  // Remove markdown code blocks
-  const jsonPattern = /```json\s*\n([\s\S]*?)\n```/;
-  const match = cleaned.match(jsonPattern);
-  if (match) {
-    return match[1].trim();
+  // Remove markdown code blocks with language identifier
+  cleaned = cleaned.replace(/```json\s*\n/g, '');
+  cleaned = cleaned.replace(/```\s*\n/g, '');
+  cleaned = cleaned.replace(/\n```$/g, '');
+  cleaned = cleaned.replace(/```$/g, '');
+  
+  // Find JSON object if there's text before/after
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    cleaned = jsonMatch[0];
   }
   
-  const codePattern = /```\s*\n([\s\S]*?)\n```/;
-  const codeMatch = cleaned.match(codePattern);
-  if (codeMatch) {
-    return codeMatch[1].trim();
-  }
-  
-  return cleaned;
+  return cleaned.trim();
 }
 
 /**
@@ -162,4 +167,26 @@ function extractRecommendations(text: string): string[] {
   return recommendations.slice(0, 5);
 }
 
-// ... rest of existing functions ...
+/**
+ * Fallback: extract analysis from non-JSON text
+ */
+function extractAnalysisFromText(text: string): AnalysisResult {
+  logger.warn('Falling back to text extraction');
+  
+  return {
+    insight: text.substring(0, 500),
+    category: 'General',
+    recommendations: extractRecommendations(text),
+    confidence: 0.5
+  };
+}
+
+/**
+ * Simple analysis without context (fallback)
+ */
+export async function analyzeData(
+  dataDescription: string
+): Promise<AnalysisResult> {
+  const emptyContext = { documents: [], metadatas: [], distances: [] };
+  return performAnalysis(dataDescription, emptyContext);
+}

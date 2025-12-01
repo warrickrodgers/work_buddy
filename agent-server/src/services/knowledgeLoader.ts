@@ -12,6 +12,46 @@ interface KnowledgeDocument {
 }
 
 /**
+ * Recursively load all markdown files from a directory
+ */
+function loadMarkdownFiles(dir: string, category: string): KnowledgeDocument[] {
+  const documents: KnowledgeDocument[] = [];
+  
+  if (!fs.existsSync(dir)) {
+    logger.warn(`Directory not found: ${dir}`);
+    return documents;
+  }
+
+  const files = fs.readdirSync(dir);
+
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+
+    if (stat.isDirectory()) {
+      // Recursively load subdirectories
+      documents.push(...loadMarkdownFiles(filePath, category));
+    } else if (file.endsWith('.md')) {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const fileName = path.basename(file, '.md');
+      
+      documents.push({
+        id: `${category}_${fileName}_${Date.now()}`,
+        content,
+        source: path.relative(path.join(__dirname, '..'), filePath),
+        category,
+        metadata: { 
+          fileName,
+          subcategory: path.basename(path.dirname(filePath))
+        }
+      });
+    }
+  }
+
+  return documents;
+}
+
+/**
  * Load all knowledge documents from context and knowledge directories
  */
 export async function loadKnowledgeBase() {
@@ -21,53 +61,19 @@ export async function loadKnowledgeBase() {
 
   // Load context files
   const contextDir = path.join(__dirname, '../context');
-  const contextFiles = [
-    { file: 'purpose.md', category: 'purpose' },
-    { file: 'role.md', category: 'role' },
-    { file: 'objectives.md', category: 'objectives' },
-    { file: 'goals.json', category: 'goals' }
-  ];
-
-  for (const { file, category } of contextFiles) {
-    const filePath = path.join(contextDir, file);
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      documents.push({
-        id: `context_${category}`,
-        content,
-        source: `context/${file}`,
-        category: 'context',
-        metadata: { subcategory: category }
-      });
-    }
-  }
+  documents.push(...loadMarkdownFiles(contextDir, 'context'));
 
   // Load knowledge files
   const knowledgeDir = path.join(__dirname, '../knowledge');
-  const knowledgeFiles = [
-    { file: 'leadership_models.md', category: 'leadership' },
-    { file: 'improvement_frameworks.md', category: 'frameworks' },
-    { file: 'example_insights.md', category: 'insights' }
-  ];
-
-  for (const { file, category } of knowledgeFiles) {
-    const filePath = path.join(knowledgeDir, file);
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      documents.push({
-        id: `knowledge_${category}`,
-        content,
-        source: `knowledge/${file}`,
-        category: 'knowledge',
-        metadata: { subcategory: category }
-      });
-    }
-  }
+  documents.push(...loadMarkdownFiles(knowledgeDir, 'knowledge'));
 
   // Store in ChromaDB
-  await chromaService.storeKnowledgeDocuments(documents);
-
-  logger.info(`Loaded ${documents.length} knowledge documents into ChromaDB`);
+  if (documents.length > 0) {
+    await chromaService.storeKnowledgeDocuments(documents);
+    logger.info(`Loaded ${documents.length} knowledge documents into ChromaDB`);
+  } else {
+    logger.warn('No knowledge documents found to load');
+  }
 }
 
 /**

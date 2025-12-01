@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { generateAIResponse, searchContext } from '../controllers/conversationController';
 import { logger } from '../utils/logger';
 import { chromaService } from '../services/chromaService';
+import { reloadKnowledgeBase } from '../services/knowledgeLoader';
 
 const router = express.Router();
 
@@ -20,6 +21,16 @@ router.post('/test-knowledge', async (req: Request, res: Response) => {
     res.json(results);
   } catch (error) {
     res.status(500).json({ error: 'Failed to search knowledge' });
+  }
+});
+
+router.post('/reload-knowledge', async (req: Request, res: Response) => {
+  try {
+    await reloadKnowledgeBase();
+    res.json({ success: true, message: 'Knowledge base reloaded' });
+  } catch (error) {
+    logger.error('Error reloading knowledge:', error);
+    res.status(500).json({ error: 'Failed to reload knowledge base' });
   }
 });
 

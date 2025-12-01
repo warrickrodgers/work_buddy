@@ -1,3 +1,4 @@
+import 'dotenv/config'; // Must be first import!
 import express from 'express';
 import cors from 'cors';
 import { logger } from './utils/logger';
