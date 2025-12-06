@@ -10,9 +10,14 @@ export const getConversationsByUserId = async (req: Request, res: Response) => {
     try {
         const userId = parseInt(req.params.user_id);
         
+        // Add validation
+        if (isNaN(userId)) {
+            return res.status(400).json({ error: 'Invalid user ID' });
+        }
+
         const conversations = await prisma.conversation.findMany({
             where: { 
-                user_id: userId,
+                user_id: userId,  // ← This was missing!
                 is_archived: false 
             },
             include: {
@@ -138,12 +143,13 @@ export const addMessageToConversation = async (req: Request, res: Response) => {
         const conversationId = parseInt(req.params.id);
         const { role, content } = req.body;
         
+        // Validate role
         if (!['USER', 'ASSISTANT'].includes(role)) {
             return res.status(400).json({ error: 'Invalid message role' });
         }
         
         // Save user message to database
-        const message = await prisma.chatMessage.create({
+        const userMessage = await prisma.chatMessage.create({
             data: {
                 conversation_id: conversationId,
                 role: role as MessageRole,
@@ -160,7 +166,7 @@ export const addMessageToConversation = async (req: Request, res: Response) => {
         // If it's a user message, get AI response from agent-server
         if (role === 'USER') {
             try {
-                // Get conversation with recent history
+                // Get conversation with recent history for context
                 const conversation = await prisma.conversation.findUnique({
                     where: { id: conversationId },
                     include: {
@@ -175,6 +181,8 @@ export const addMessageToConversation = async (req: Request, res: Response) => {
                     return res.status(404).json({ error: 'Conversation not found' });
                 }
 
+                console.log(`Calling agent-server for conversation ${conversationId}`);
+
                 // Call agent-server to generate AI response
                 const aiResponse = await agentClient.generateResponse(
                     conversation.user_id,
@@ -185,6 +193,8 @@ export const addMessageToConversation = async (req: Request, res: Response) => {
                         content: msg.content
                     }))
                 );
+
+                console.log('Received AI response:', aiResponse.response?.substring(0, 100));
 
                 // Save AI response to database
                 const assistantMessage = await prisma.chatMessage.create({
@@ -201,8 +211,9 @@ export const addMessageToConversation = async (req: Request, res: Response) => {
                     data: { updated_at: new Date() }
                 });
 
+                // Return both messages
                 return res.status(201).json({
-                    userMessage: message,
+                    userMessage,
                     assistantMessage
                 });
             } catch (agentError) {
@@ -210,14 +221,14 @@ export const addMessageToConversation = async (req: Request, res: Response) => {
                 
                 // Return user message even if AI fails
                 return res.status(201).json({
-                    userMessage: message,
+                    userMessage,
                     error: 'AI response temporarily unavailable'
                 });
             }
         }
         
         // If it's an assistant message (manual input), just return it
-        res.status(201).json({ message });
+        res.status(201).json({ message: userMessage });
     } catch (error) {
         console.error('Error adding message:', error);
         res.status(500).json({ error: 'Failed to add message' });

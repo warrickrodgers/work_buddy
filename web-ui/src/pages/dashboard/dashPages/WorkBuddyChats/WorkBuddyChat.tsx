@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Bot, User, ArrowUp, Loader2 } from 'lucide-react';
+import { useAuth } from '../../../../context/AuthContext';
 import api from '@/lib/api';
 
 interface Message {
@@ -19,8 +20,9 @@ interface ConversationCache {
   messages: Message[];
   lastFetched: number;
 }
-
-export function WorkBuddyChat({ userId }: { userId: number }) {
+export function WorkBuddyChat() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -30,6 +32,18 @@ export function WorkBuddyChat({ userId }: { userId: number }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  // Guard clause - handle null user
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-slate-600">Loading user information...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Clean up markdown response from LLM
   const cleanMarkdown = (text: string): string => {
@@ -76,25 +90,38 @@ export function WorkBuddyChat({ userId }: { userId: number }) {
   // Fetch or create conversation
   const fetchOrCreateConversation = async () => {
     try {
+      setIsLoading(true);
+      
       // Check cache first
       const cached = getCachedConversation();
       if (cached) {
-        setConversationId(cached.conversationId);
-        setMessages(cached.messages);
-        setIsLoading(false);
-        return cached.conversationId;
+        console.log('Using cached conversation:', cached.conversationId);
+        
+        // Verify conversation still exists in DB
+        try {
+          await api.get(`/conversations/${cached.conversationId}`);
+          setConversationId(cached.conversationId);
+          setMessages(cached.messages);
+          setIsLoading(false);
+          return cached.conversationId;
+        } catch (error) {
+          console.log('Cached conversation no longer exists, fetching fresh');
+          localStorage.removeItem(`conversation_${user.id}`);
+        }
       }
 
       // Fetch user's conversations
-      const response = await api.get(`/conversations/user/${userId}`);
+      const response = await api.get(`/conversations/user/${user.id}`);
       const conversations = response.data;
 
       if (conversations.length > 0) {
         // Load most recent conversation
         const latestConv = conversations[0];
+        console.log('Loading conversation:', latestConv.id);
+        
         const messagesResponse = await api.get(`/conversations/${latestConv.id}/messages`);
-
         const data = messagesResponse.data;
+        
         const formattedMessages = data.messages.map((msg: any) => ({
           id: msg.id.toString(),
           role: msg.role.toLowerCase() as 'user' | 'assistant',
@@ -109,12 +136,16 @@ export function WorkBuddyChat({ userId }: { userId: number }) {
         return latestConv.id;
       } else {
         // Create new conversation
+        console.log('Creating new conversation for user:', user.id);
+        
         const createResponse = await api.post('/conversations', {
-          user_id: userId,
+          user_id: user.id,
           title: 'New Conversation'
         });
 
         const newConv = createResponse.data;
+        console.log('Created conversation:', newConv.id);
+        
         setConversationId(newConv.id);
         setCachedConversation(newConv.id, []);
         
@@ -132,6 +163,20 @@ export function WorkBuddyChat({ userId }: { userId: number }) {
   useEffect(() => {
     fetchOrCreateConversation();
   }, [userId]);
+
+  // Add a manual cache clear function (temporary for debugging)
+  useEffect(() => {
+    // Clear cache on mount if conversationId is invalid
+    const cached = getCachedConversation();
+    if (cached && cached.conversationId) {
+      console.log('Checking cached conversation validity...');
+      api.get(`/conversations/${cached.conversationId}`)
+        .catch(() => {
+          console.log('Clearing invalid cache');
+          localStorage.removeItem(`conversation_${user.id}`);
+        });
+    }
+  }, []);
 
   // Update cache whenever messages change
   useEffect(() => {
@@ -178,7 +223,7 @@ export function WorkBuddyChat({ userId }: { userId: number }) {
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      // Call bi-app API (which will call agent-server internally)
+      // Call bi-app API (which calls agent-server internally)
       const response = await api.post(`/conversations/${conversationId}/messages`, {
         role: 'USER',
         content: currentInput
@@ -191,7 +236,7 @@ export function WorkBuddyChat({ userId }: { userId: number }) {
         const assistantMessage: Message = {
           id: data.assistantMessage.id.toString(),
           role: 'assistant',
-          content: cleanMarkdown(data.assistantMessage.content),
+          content: data.assistantMessage.content,
           timestamp: new Date(data.assistantMessage.created_at)
         };
         
@@ -232,23 +277,23 @@ export function WorkBuddyChat({ userId }: { userId: number }) {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="flex flex-col h-screen">
       {/* Header */}
-      <div className="border-b bg-white shadow-sm">
+      <div className="bg-white shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-semibold text-slate-800">Team Efficiency Assistant</h1>
-          <p className="text-sm text-slate-500 mt-1">Powered by AI to help improve workplace productivity</p>
+          <h1 className="text-2xl font-semibold text-slate-800">Simon: Leadership Coach</h1>
+          <p className="text-sm text-slate-500 mt-1">Powered by AI to help improve workplace motivation</p>
         </div>
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 bg-gray-100">
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 && (
             <div className="text-center py-12">
               <Bot className="w-16 h-16 mx-auto text-slate-300 mb-4" />
               <h2 className="text-xl font-medium text-slate-600 mb-2">Start a conversation</h2>
-              <p className="text-slate-400">Ask me anything about improving team efficiency</p>
+              <p className="text-slate-400">Ask me anything about what you're trying to inspire</p>
             </div>
           )}
 
@@ -331,7 +376,7 @@ export function WorkBuddyChat({ userId }: { userId: number }) {
       </div>
 
       {/* Input Area */}
-      <div className="border-t bg-white shadow-lg">
+      <div className="bg-white shadow-lg bg-slate-50">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="relative rounded-3xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
             <Textarea

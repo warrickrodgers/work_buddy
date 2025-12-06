@@ -44,7 +44,7 @@ const appNavigationData = {
       items: [
         {
           title: "Nothing here yet! Create?",
-          url: "#",
+          url: "/dashboard/challenges/createchallenge",
         }
       ],
     },
