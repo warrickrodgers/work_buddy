@@ -21,8 +21,11 @@ model User {
     auth_method String
     problem_request ProblemRequest[]
     insight_feedback InsightFeedback[]
+    conversations Conversation[]
+    challenges Challenge[]
 }
 
+// For one-time data analysis
 model ProblemRequest {
     id Int @id @default(autoincrement())
     user User @relation(fields: [user_id], references: [id])
@@ -89,4 +92,117 @@ enum ProblemRequestStatus {
     PROCESSING
     DONE
     DID_NOT_MEET
+}
+
+enum ConversationType {
+  GENERAL
+  CHALLENGE
+}
+
+model Conversation {
+  id                Int                @id @default(autoincrement())
+  user              User               @relation(fields: [user_id], references: [id])
+  user_id           Int
+  title             String             @default("New Conversation")
+  conversation_type ConversationType   @default(GENERAL)
+  challenge_id      Int?               @unique
+  challenge         Challenge?         @relation(fields: [challenge_id], references: [id])
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
+  messages          ChatMessage[]
+  is_archived       Boolean            @default(false)
+  
+  @@index([user_id])
+}
+
+model Challenge {
+  id                Int            @id @default(autoincrement())
+  user              User           @relation(fields: [user_id], references: [id])
+  user_id           Int
+  title             String
+  description       String         @db.Text
+  category          ChallengeCategory
+  challenge_type    ChallengeType
+  audience_type     AudienceType
+  employee_id       String?
+  team_id           String?
+  start_date        DateTime
+  end_date          DateTime?
+  success_criteria  String         @db.Text
+  metrics           String?        @db.Text
+  ai_notes          String?        @db.Text
+  status            ChallengeStatus @default(ACTIVE)
+  progress          Int            @default(0)
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+  completed_at      DateTime?
+  
+  // Dedicated chat thread for this challenge
+  conversation      Conversation?
+  check_ins         ChallengeCheckIn[]
+  
+  @@index([user_id])
+  @@index([status])
+}
+
+model ChallengeCheckIn {
+  id              Int       @id @default(autoincrement())
+  challenge       Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  challenge_id    Int
+  
+  // Check-in data
+  notes           String    @db.Text
+  progress_update Int       // Progress percentage at this check-in
+  sentiment       String?   // positive, neutral, negative
+  ai_feedback     String?   @db.Text  // AI-generated feedback/encouragement
+  
+  created_at      DateTime  @default(now())
+  
+  @@index([challenge_id])
+}
+
+enum ChallengeCategory {
+  COMMUNICATION
+  PRODUCTIVITY
+  LEADERSHIP
+  CULTURE
+  SKILLS
+  PROCESS
+}
+
+enum ChallengeType {
+  HABIT
+  SKILL
+  BEHAVIOR
+  PERFORMANCE
+  ACCOUNTABILITY
+}
+
+enum AudienceType {
+  INDIVIDUAL
+  TEAM
+  ORGANIZATION
+}
+
+enum ChallengeStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+model ChatMessage {
+  id              Int           @id @default(autoincrement())
+  conversation    Conversation  @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  conversation_id Int
+  role            MessageRole
+  content         String        @db.Text
+  created_at      DateTime      @default(now())
+  
+  @@index([conversation_id])
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
 }

@@ -9,29 +9,40 @@ import './App.css'
 import UploadsInsetPage  from './pages/dashboard/dashPages/Uploads/Uploads';
 import NewUploadInsetPage from './pages/dashboard/dashPages/Uploads/NewUpload';
 import './App.css';
+import { CreateChallenge } from './pages/dashboard/dashPages/Challenges/CreateChallenge';
+import { WorkBuddyChat } from './pages/dashboard/dashPages/WorkBuddyChats/WorkBuddyChat';
+import { AuthProvider } from './context/AuthContext';
+import { ChallengeDashboard } from './pages/dashboard/dashPages/Challenges';
+import { ChallengeDetail } from './pages/dashboard/dashPages/Challenges/ChallengeDetail';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path='/' element={< Home/>}></Route>
-        <Route path="/signup" element={< SignUp/>}></Route>
-        <Route path="/login" element={< Login/>}></Route>
-        <Route path="/forgotPassword" element={< ForgotPassword/>}></Route>
-        <Route 
-           path="/dashboard"
-           element={
-             <PrivateRoute>
-               <Dashboard />
-             </PrivateRoute>
-           }
-        >
-          {/* Nested routes within Dashboard (the "inset") */}
-          <Route path="/dashboard/uploads" element={<UploadsInsetPage />}></Route>
-          <Route path="/dashboard/uploads/new-upload" element={<NewUploadInsetPage />}/>
-        </Route>
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path='/' element={< Home/>}></Route>
+          <Route path="/signup" element={< SignUp/>}></Route>
+          <Route path="/login" element={< Login/>}></Route>
+          <Route path="/forgotPassword" element={< ForgotPassword/>}></Route>
+          <Route 
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          >
+            {/* Nested routes within Dashboard (the "inset") */}
+            <Route path="/dashboard/challenges/" element={<ChallengeDashboard />}/>
+            <Route path="/dashboard/challenges/createchallenge" element={<CreateChallenge />}/>
+            <Route path="/dashboard/challenges/:id" element={<ChallengeDetail />} />
+            <Route path="/dashboard/workbuddychats/workbuddychat" element={<WorkBuddyChat />}/>
+            <Route path="/dashboard/uploads" element={<UploadsInsetPage />}></Route>
+            <Route path="/dashboard/uploads/new-upload" element={<NewUploadInsetPage />}/>
+          </Route>
+        </Routes>
+      </Router>
+    </AuthProvider>
   )
 }
 
