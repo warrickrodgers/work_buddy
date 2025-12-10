@@ -67,12 +67,14 @@ export const getConversationById = async (req: Request, res: Response) => {
 // Create new conversation
 export const createConversation = async (req: Request, res: Response) => {
     try {
-        const { user_id, title } = req.body;
+        const { user_id, title, conversation_type, challenge_id } = req.body;
         
         const conversation = await prisma.conversation.create({
             data: {
                 user_id,
-                title: title || 'New Conversation'
+                title: title || 'New Conversation',
+                conversation_type: conversation_type || 'GENERAL',
+                challenge_id: challenge_id || null
             }
         });
         

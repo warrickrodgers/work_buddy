@@ -12,6 +12,8 @@ import './App.css';
 import { CreateChallenge } from './pages/dashboard/dashPages/Challenges/CreateChallenge';
 import { WorkBuddyChat } from './pages/dashboard/dashPages/WorkBuddyChats/WorkBuddyChat';
 import { AuthProvider } from './context/AuthContext';
+import { ChallengeDashboard } from './pages/dashboard/dashPages/Challenges';
+import { ChallengeDetail } from './pages/dashboard/dashPages/Challenges/ChallengeDetail';
 
 function App() {
   return (
@@ -31,8 +33,10 @@ function App() {
             }
           >
             {/* Nested routes within Dashboard (the "inset") */}
+            <Route path="/dashboard/challenges/" element={<ChallengeDashboard />}/>
             <Route path="/dashboard/challenges/createchallenge" element={<CreateChallenge />}/>
-            <Route path="/dashboard/workbuddychats/workbuddychat" element={<WorkBuddyChat userId={0} />}/>
+            <Route path="/dashboard/challenges/:id" element={<ChallengeDetail />} />
+            <Route path="/dashboard/workbuddychats/workbuddychat" element={<WorkBuddyChat />}/>
             <Route path="/dashboard/uploads" element={<UploadsInsetPage />}></Route>
             <Route path="/dashboard/uploads/new-upload" element={<NewUploadInsetPage />}/>
           </Route>

@@ -5,6 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import api from '@/lib/api';
+import { useAuth } from '../../../../context/AuthContext';
 
 type AudienceType = 'individual' | 'team' | 'organization';
 type ChallengeType = 'habit' | 'skill' | 'behavior' | 'performance' | 'accountability';
@@ -26,6 +28,7 @@ interface ChallengeFormData {
 }
 
 export function CreateChallenge() {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ChallengeFormData, string>>>({});
   
@@ -73,16 +76,38 @@ export function CreateChallenge() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
+    if (!user) return;
+
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Challenge created:', formData);
+    try {
+      await api.post('/challenges', {
+        user_id: user.id,
+        title: formData.title,
+        description: formData.description,
+        category: formData.category.toUpperCase(),
+        challenge_type: formData.challengeType.toUpperCase(),
+        audience_type: formData.audienceType.toUpperCase(),
+        employee_id: formData.employeeId || null,
+        team_id: formData.teamId || null,
+        start_date: formData.startDate,
+        end_date: formData.endDate || null,
+        success_criteria: formData.successCriteria,
+        metrics: formData.metrics || null,
+        ai_notes: formData.aiNotes || null
+      });
+
       alert('Challenge created successfully!');
+      // Navigate to challenges list or detail page
+      window.location.href = '/dashboard/challenges';
+    } catch (error) {
+      console.error('Error creating challenge:', error);
+      alert('Failed to create challenge. Please try again.');
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -106,7 +131,7 @@ export function CreateChallenge() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="title">Challenge Title *</Label>
+                <Label htmlFor="title" className="my-3">Challenge Title *</Label>
                 <Input
                   id="title"
                   placeholder="e.g., Improve Daily Standup Engagement"
@@ -118,7 +143,7 @@ export function CreateChallenge() {
               </div>
 
               <div>
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="description" className="my-3">Description *</Label>
                 <Textarea
                   id="description"
                   placeholder="Explain what this challenge is and why it matters..."
@@ -131,7 +156,7 @@ export function CreateChallenge() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="category">Category *</Label>
+                  <Label htmlFor="category" className="my-3">Category *</Label>
                   <select
                     id="category"
                     value={formData.category}
@@ -150,7 +175,7 @@ export function CreateChallenge() {
                 </div>
 
                 <div>
-                  <Label htmlFor="challengeType">Challenge Type *</Label>
+                  <Label htmlFor="challengeType" className="my-3">Challenge Type *</Label>
                   <select
                     id="challengeType"
                     value={formData.challengeType}
@@ -177,7 +202,7 @@ export function CreateChallenge() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="audienceType">Audience Type *</Label>
+                <Label htmlFor="audienceType" className="my-3">Audience Type *</Label>
                 <select
                   id="audienceType"
                   value={formData.audienceType}
@@ -194,7 +219,7 @@ export function CreateChallenge() {
 
               {formData.audienceType === 'individual' && (
                 <div>
-                  <Label htmlFor="employeeId">Employee ID *</Label>
+                  <Label htmlFor="employeeId" className="my-3">Employee ID *</Label>
                   <Input
                     id="employeeId"
                     placeholder="Enter employee identifier"
@@ -208,7 +233,7 @@ export function CreateChallenge() {
 
               {formData.audienceType === 'team' && (
                 <div>
-                  <Label htmlFor="teamId">Team ID *</Label>
+                  <Label htmlFor="teamId" className="my-3">Team ID *</Label>
                   <Input
                     id="teamId"
                     placeholder="Enter team identifier"
@@ -230,7 +255,7 @@ export function CreateChallenge() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="startDate">Start Date *</Label>
+                  <Label htmlFor="startDate" className="my-3">Start Date *</Label>
                   <Input
                     id="startDate"
                     type="date"
@@ -242,7 +267,7 @@ export function CreateChallenge() {
                 </div>
 
                 <div>
-                  <Label htmlFor="endDate">End Date (Optional)</Label>
+                  <Label htmlFor="endDate" className="my-3">End Date (Optional)</Label>
                   <Input
                     id="endDate"
                     type="date"
@@ -262,7 +287,7 @@ export function CreateChallenge() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="successCriteria">Success Criteria *</Label>
+                <Label htmlFor="successCriteria" className="my-3">Success Criteria *</Label>
                 <Textarea
                   id="successCriteria"
                   placeholder="Describe what completion or success looks like..."
@@ -274,7 +299,7 @@ export function CreateChallenge() {
               </div>
 
               <div>
-                <Label htmlFor="metrics">Measurable KPIs (Optional)</Label>
+                <Label htmlFor="metrics" className="my-3">Measurable KPIs (Optional)</Label>
                 <Textarea
                   id="metrics"
                   placeholder="e.g., 'Increase meeting attendance by 20%', 'Reduce response time to under 2 hours'"
@@ -294,7 +319,7 @@ export function CreateChallenge() {
             </CardHeader>
             <CardContent>
               <div>
-                <Label htmlFor="aiNotes">AI Notes (Optional)</Label>
+                <Label htmlFor="aiNotes" className="my-3">AI Notes (Optional)</Label>
                 <Textarea
                   id="aiNotes"
                   placeholder="Any additional context, constraints, or special considerations the AI should know about..."
