@@ -1,19 +1,11 @@
+// web-ui/src/components/app-sidebar.tsx
 import * as React from "react"
+import { useEffect, useState } from "react"
 import {
-  BookOpen,
-  Bot,
   Command,
-  Frame,
-  LifeBuoy,
-  Map,
-  PieChart,
-  Send,
-  Settings2,
-  SquareTerminal,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -25,11 +17,27 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import appNavigationData from "@/lib/appNavigationData"
-
-const data = appNavigationData;
+import getAppNavigationData from "@/lib/appNavigationData"
+import { challengeApi } from "@/lib/api"
+import { useAuth } from "@/context/AuthContext"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuth();
+  const [navData, setNavData] = useState(getAppNavigationData());
+
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      if (!user?.id) return;
+      
+      const challenges = await challengeApi.getAll(user.id);
+      // Map to simpler format for navigation
+      const simpleChallenges = challenges.map(c => ({ id: c.id, title: c.title }));
+      setNavData(getAppNavigationData(simpleChallenges));
+    };
+
+    fetchChallenges();
+  }, [user?.id]);
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -42,7 +50,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">Work Buddy</span>
-                  <span className="truncate text-xs">Emporwering You</span>
+                  <span className="truncate text-xs">Empowering You</span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -50,12 +58,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        {/* <NavProjects projects={data.projects} /> */}
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navData.navMain} />
+        <NavSecondary items={navData.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={navData.user} />
       </SidebarFooter>
     </Sidebar>
   )

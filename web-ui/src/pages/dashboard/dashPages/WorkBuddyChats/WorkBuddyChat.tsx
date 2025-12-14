@@ -89,75 +89,87 @@ export function WorkBuddyChat() {
 
   // Fetch or create conversation
   const fetchOrCreateConversation = async () => {
-    try {
-      setIsLoading(true);
+  try {
+    setIsLoading(true);
+    
+    // Check cache first
+    const cached = getCachedConversation();
+    if (cached) {
+      console.log('Using cached conversation:', cached.conversationId);
       
-      // Check cache first
-      const cached = getCachedConversation();
-      if (cached) {
-        console.log('Using cached conversation:', cached.conversationId);
-        
-        // Verify conversation still exists in DB
-        try {
-          await api.get(`/conversations/${cached.conversationId}`);
+      // Verify conversation still exists in DB and is GENERAL type
+      try {
+        const verifyResponse = await api.get(`/conversations/${cached.conversationId}`);
+        if (verifyResponse.data.conversation_type === 'GENERAL') {
           setConversationId(cached.conversationId);
           setMessages(cached.messages);
           setIsLoading(false);
           return cached.conversationId;
-        } catch (error) {
-          console.log('Cached conversation no longer exists, fetching fresh');
+        } else {
+          // Cached conversation is not GENERAL type, clear cache
+          console.log('Cached conversation is not GENERAL type, fetching fresh');
           localStorage.removeItem(`conversation_${user.id}`);
         }
+      } catch (error) {
+        console.log('Cached conversation no longer exists, fetching fresh');
+        localStorage.removeItem(`conversation_${user.id}`);
       }
-
-      // Fetch user's conversations
-      const response = await api.get(`/conversations/user/${user.id}`);
-      const conversations = response.data;
-
-      if (conversations.length > 0) {
-        // Load most recent conversation
-        const latestConv = conversations[0];
-        console.log('Loading conversation:', latestConv.id);
-        
-        const messagesResponse = await api.get(`/conversations/${latestConv.id}/messages`);
-        const data = messagesResponse.data;
-        
-        const formattedMessages = data.messages.map((msg: any) => ({
-          id: msg.id.toString(),
-          role: msg.role.toLowerCase() as 'user' | 'assistant',
-          content: msg.content,
-          timestamp: new Date(msg.created_at)
-        }));
-
-        setConversationId(latestConv.id);
-        setMessages(formattedMessages);
-        setCachedConversation(latestConv.id, formattedMessages);
-        
-        return latestConv.id;
-      } else {
-        // Create new conversation
-        console.log('Creating new conversation for user:', user.id);
-        
-        const createResponse = await api.post('/conversations', {
-          user_id: user.id,
-          title: 'New Conversation'
-        });
-
-        const newConv = createResponse.data;
-        console.log('Created conversation:', newConv.id);
-        
-        setConversationId(newConv.id);
-        setCachedConversation(newConv.id, []);
-        
-        return newConv.id;
-      }
-    } catch (error) {
-      console.error('Error loading conversation:', error);
-      setConversationId(-1);
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+    // Fetch user's GENERAL conversations only
+    const response = await api.get(`/conversations/user/${user.id}`);
+    const conversations = response.data;
+    
+    // Filter for GENERAL conversations only
+    const generalConversations = conversations.filter(
+      (conv: any) => conv.conversation_type === 'GENERAL'
+    );
+
+    if (generalConversations.length > 0) {
+      // Load most recent GENERAL conversation
+      const latestConv = generalConversations[0];
+      console.log('Loading GENERAL conversation:', latestConv.id);
+      
+      const messagesResponse = await api.get(`/conversations/${latestConv.id}/messages`);
+      const data = messagesResponse.data;
+      
+      const formattedMessages = data.messages.map((msg: any) => ({
+        id: msg.id.toString(),
+        role: msg.role.toLowerCase() as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: new Date(msg.created_at)
+      }));
+
+      setConversationId(latestConv.id);
+      setMessages(formattedMessages);
+      setCachedConversation(latestConv.id, formattedMessages);
+      
+      return latestConv.id;
+    } else {
+      // Create new GENERAL conversation
+      console.log('Creating new GENERAL conversation for user:', user.id);
+      
+      const createResponse = await api.post('/conversations', {
+        user_id: user.id,
+        title: 'New Conversation',
+        conversation_type: 'GENERAL'  // ← Explicitly set to GENERAL
+      });
+
+      const newConv = createResponse.data;
+      console.log('Created GENERAL conversation:', newConv.id);
+      
+      setConversationId(newConv.id);
+      setCachedConversation(newConv.id, []);
+      
+      return newConv.id;
+    }
+  } catch (error) {
+    console.error('Error loading conversation:', error);
+    setConversationId(-1);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Load conversation on mount
   useEffect(() => {

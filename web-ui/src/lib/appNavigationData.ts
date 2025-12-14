@@ -1,14 +1,9 @@
 // web-ui/src/lib/appNavigationData.ts
 import {
-  BookOpen,
-  Bot,
-  Command,
   CompassIcon,
-  DraftingCompass,
   FolderUp,
   Frame,
   Gauge,
-  icons,
   LifeBuoy,
   Map,
   MessagesSquare,
@@ -16,20 +11,16 @@ import {
   PieChart,
   Send,
   Settings2,
-  SquareTerminal,
 } from "lucide-react"
 
-// Define Challenge type to match your backend
+// Define Challenge type (simplified version for navigation)
 interface Challenge {
-  id: string;
+  id: number;
   title: string;
-  description?: string;
-  status?: string;
-  // Add other fields from your Prisma schema
 }
 
 const getAppNavigationData = (challenges: Challenge[] = []) => {
-  // Map challenges to navigation items, or show default if empty
+  // Map challenges to navigation items, or show generic "Challenges" if empty
   const challengeItems = challenges.length > 0 
     ? challenges.map(challenge => ({
         title: challenge.title,
@@ -37,7 +28,7 @@ const getAppNavigationData = (challenges: Challenge[] = []) => {
       }))
     : [
         {
-          title: "Challenges", // Changed from "Nothing here yet! Create?"
+          title: challenges.length > 0 ? "Create challenge" : "Nothing here yet! Create?",
           url: "/dashboard/challenges/createchallenge",
         }
       ];

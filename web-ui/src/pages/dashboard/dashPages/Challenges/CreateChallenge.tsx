@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +30,7 @@ interface ChallengeFormData {
 
 export function CreateChallenge() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ChallengeFormData, string>>>({});
   
@@ -83,7 +85,7 @@ export function CreateChallenge() {
     setIsSubmitting(true);
 
     try {
-      await api.post('/challenges', {
+      const response = await api.post('/challenges', {
         user_id: user.id,
         title: formData.title,
         description: formData.description,
@@ -99,12 +101,20 @@ export function CreateChallenge() {
         ai_notes: formData.aiNotes || null
       });
 
-      alert('Challenge created successfully!');
-      // Navigate to challenges list or detail page
-      window.location.href = '/dashboard/challenges';
-    } catch (error) {
+      console.log('Challenge created:', response.data); // Add logging
+      
+      // Navigate using React Router instead of window.location
+      navigate('/dashboard/challenges', { 
+        state: { refresh: true, newChallengeId: response.data.id } 
+      });
+    } catch (error: any) {
       console.error('Error creating challenge:', error);
-      alert('Failed to create challenge. Please try again.');
+      // More detailed error message
+      if (error.response) {
+        alert(`Failed to create challenge: ${error.response.data.error || 'Unknown error'}`);
+      } else {
+        alert('Failed to create challenge. Please check your network connection.');
+      }
     } finally {
       setIsSubmitting(false);
     }
