@@ -60,7 +60,7 @@ export function ChallengeDashboard() {
   }
 
   return (
-    <div className="h-full bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="h-full p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">

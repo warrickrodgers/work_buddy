@@ -153,7 +153,7 @@ export function ChallengeDetail() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex">
+    <div className="h-screen flex">
       {/* Left Panel - Challenge Details */}
       <div className="w-1/3 border-r bg-white overflow-y-auto">
         <div className="p-6">

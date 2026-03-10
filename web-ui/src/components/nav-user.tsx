@@ -6,7 +6,9 @@ import {
   ChevronsUpDown,
   CreditCard,
   LogOut,
+  Moon,
   Sparkles,
+  Sun,
 } from "lucide-react"
 
 import {
@@ -30,6 +32,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "@/context/ThemeContext";
 
 export function NavUser({
   user,
@@ -42,6 +45,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
@@ -107,6 +111,11 @@ export function NavUser({
                 Notifications
               </DropdownMenuItem> */}
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={toggleTheme}>
+              {theme === 'dark' ? <Sun /> : <Moon />}
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={handleLogout}>
               <LogOut />

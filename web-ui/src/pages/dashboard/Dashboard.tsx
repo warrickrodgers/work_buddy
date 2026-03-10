@@ -40,9 +40,9 @@ export default function Page() {
             </Breadcrumb>
           </div>
         </header> */}
-        <div>
+        <div className="flex flex-col flex-1 min-h-0">
           <Suspense fallback={<div>Loading...</div>}>
-            <Outlet /> 
+            <Outlet />
           </Suspense>
         </div>
       </SidebarInset>

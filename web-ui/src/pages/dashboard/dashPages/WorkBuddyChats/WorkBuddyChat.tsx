@@ -36,7 +36,7 @@ export function WorkBuddyChat() {
   // Guard clause - handle null user
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-slate-600">Loading user information...</p>
@@ -279,33 +279,33 @@ export function WorkBuddyChat() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="flex items-center justify-center flex-1 dark:bg-none dark:bg-background">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-slate-600">Loading conversation...</p>
+          <p className="text-slate-600 dark:text-slate-300">Loading conversation...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col flex-1 min-h-0 dark:bg-none dark:bg-background">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="border-b border-border bg-card shadow-sm shrink-0">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-semibold text-slate-800">Simon: Leadership Coach</h1>
-          <p className="text-sm text-slate-500 mt-1">Powered by AI to help improve workplace motivation</p>
+          <h1 className="text-2xl font-semibold text-foreground">Team Efficiency Assistant</h1>
+          <p className="text-sm text-muted-foreground mt-1">Powered by AI to help improve workplace productivity</p>
         </div>
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 bg-gray-100">
+      <div className="flex-1 overflow-y-auto px-4 py-6 min-h-0">
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 && (
             <div className="text-center py-12">
-              <Bot className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <h2 className="text-xl font-medium text-slate-600 mb-2">Start a conversation</h2>
-              <p className="text-slate-400">Ask me anything about what you're trying to inspire</p>
+              <Bot className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+              <h2 className="text-xl font-medium text-slate-600 dark:text-slate-300 mb-2">Start a conversation</h2>
+              <p className="text-slate-400 dark:text-slate-500">Ask me anything about improving team efficiency</p>
             </div>
           )}
 
@@ -319,18 +319,18 @@ export function WorkBuddyChat() {
                   <Bot className="w-5 h-5 text-white" />
                 </div>
               )}
-              
+
               <Card className={`px-4 py-3 max-w-2xl ${
-                message.role === 'user' 
-                  ? 'bg-blue-600 text-white border-blue-600' 
-                  : 'bg-white border-slate-200'
+                message.role === 'user'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
               }`}>
                 <div className={`text-sm leading-relaxed prose prose-sm max-w-none ${
-                  message.role === 'user' 
-                    ? 'prose-invert prose-headings:text-white prose-p:text-white prose-strong:text-white prose-li:text-white prose-code:text-white prose-code:bg-blue-700 prose-pre:bg-blue-800 prose-h1:text-xl prose-h1:font-bold prose-h1:mb-3 prose-h1:mt-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mb-2 prose-h2:mt-3 prose-h3:text-base prose-h3:font-semibold prose-h3:mb-2 prose-h3:mt-3 prose-p:mb-3 prose-p:mt-0' 
-                    : 'prose-slate prose-code:text-blue-600 prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-slate-900 prose-pre:rounded-lg prose-pre:border prose-pre:border-slate-700 prose-h1:text-xl prose-h1:font-bold prose-h1:mb-3 prose-h1:mt-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mb-2 prose-h2:mt-3 prose-h3:text-base prose-h3:font-semibold prose-h3:mb-2 prose-h3:mt-3 prose-p:mb-3 prose-p:mt-0'
+                  message.role === 'user'
+                    ? 'prose-invert prose-headings:text-white prose-p:text-white prose-strong:text-white prose-li:text-white prose-code:text-white prose-code:bg-blue-700 prose-pre:bg-blue-800 prose-h1:text-xl prose-h1:font-bold prose-h1:mb-3 prose-h1:mt-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mb-2 prose-h2:mt-3 prose-h3:text-base prose-h3:font-semibold prose-h3:mb-2 prose-h3:mt-3 prose-p:mb-3 prose-p:mt-0'
+                    : 'prose-slate dark:prose-invert prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-700 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-slate-900 prose-pre:rounded-lg prose-pre:border prose-pre:border-slate-700 prose-h1:text-xl prose-h1:font-bold prose-h1:mb-3 prose-h1:mt-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mb-2 prose-h2:mt-3 prose-h3:text-base prose-h3:font-semibold prose-h3:mb-2 prose-h3:mt-3 prose-p:mb-3 prose-p:mt-0'
                 }`}>
-                  <ReactMarkdown 
+                  <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
                       pre: ({ node, children, ...props }: any) => (
@@ -373,11 +373,11 @@ export function WorkBuddyChat() {
               <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
                 <Bot className="w-5 h-5 text-white" />
               </div>
-              <Card className="px-4 py-3 bg-white border-slate-200">
+              <Card className="px-4 py-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </Card>
             </div>
@@ -388,16 +388,16 @@ export function WorkBuddyChat() {
       </div>
 
       {/* Input Area */}
-      <div className="bg-white shadow-lg bg-slate-50">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="relative rounded-3xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+      <div className="border-t border-border bg-card shadow-lg shrink-0">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="relative rounded-3xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow">
             <Textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Ask about team efficiency, productivity tips, or workflow improvements..."
-              className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-4 pr-14 focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] leading-6"
+              className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-4 pr-14 focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] leading-6 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               rows={1}
               disabled={!conversationId}
             />
@@ -405,8 +405,7 @@ export function WorkBuddyChat() {
               onClick={handleSend}
               disabled={!input.trim() || isTyping || !conversationId}
               size="icon"
-              className="absolute top-1/2 -translate-y-1/2 right-3 h-8 w-8 rounded-lg hover:opacity-90 disabled:opacity-30"
-              style={{color:'#ffffff', backgroundColor: '#101828' }}
+              className="absolute top-1/2 -translate-y-1/2 right-3 h-8 w-8 rounded-lg hover:opacity-90 disabled:opacity-30 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
             >
               <ArrowUp className="w-4 h-4" />
             </Button>

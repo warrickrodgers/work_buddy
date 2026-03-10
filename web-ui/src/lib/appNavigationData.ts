@@ -42,7 +42,7 @@ const getAppNavigationData = (challenges: Challenge[] = []) => {
     navMain: [
       {
         title: "Dashboard",
-        url: "#",
+        url: "/dashboard/",
         icon: Gauge
       },
       {
