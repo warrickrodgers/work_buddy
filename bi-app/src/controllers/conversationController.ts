@@ -9,7 +9,11 @@ const prisma = new PrismaClient();
 export const getConversationsByUserId = async (req: Request, res: Response) => {
     try {
         const userId = parseInt(req.params.user_id);
-        
+
+        if (isNaN(userId)) {
+            return res.status(400).json({ error: 'Invalid user ID' });
+        }
+
         const conversations = await prisma.conversation.findMany({
             where: { 
                 user_id: userId,
@@ -62,12 +66,13 @@ export const getConversationById = async (req: Request, res: Response) => {
 // Create new conversation
 export const createConversation = async (req: Request, res: Response) => {
     try {
-        const { user_id, title } = req.body;
-        
+        const { user_id, title, conversation_type } = req.body;
+
         const conversation = await prisma.conversation.create({
             data: {
                 user_id,
-                title: title || 'New Conversation'
+                title: title || 'New Conversation',
+                ...(conversation_type && { conversation_type })
             }
         });
         

@@ -50,7 +50,6 @@ export default function Login() {
       const response = await api.post("/auth/signin", { email, password });
       const { token, user } = response.data;
       login(token, user);
-      localStorage.setItem("token", token);
       navigate("/dashboard");
     } catch (err) {
       console.error("Login failed:", err);
