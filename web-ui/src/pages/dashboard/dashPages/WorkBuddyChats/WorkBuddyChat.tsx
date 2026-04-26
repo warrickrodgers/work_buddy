@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
+import { ChatMessage } from '@/components/ChatMessage';
 import { Bot, User, ArrowUp, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
 import api from '@/lib/api';
@@ -38,31 +37,12 @@ export function WorkBuddyChat() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-slate-600">Loading user information...</p>
         </div>
       </div>
     );
   }
-
-  // Clean up markdown response from LLM
-  const cleanMarkdown = (text: string): string => {
-    let cleaned = text.trim();
-    
-    const markdownPattern = /^```markdown\s*\n([\s\S]*?)\n```$/;
-    const markdownMatch = cleaned.match(markdownPattern);
-    if (markdownMatch) {
-      return markdownMatch[1].trim();
-    }
-    
-    const codeBlockPattern = /^```\s*\n([\s\S]*?)\n```$/;
-    const codeMatch = cleaned.match(codeBlockPattern);
-    if (codeMatch) {
-      return codeMatch[1].trim();
-    }
-    
-    return cleaned;
-  };
 
   // Cache management
   const getCachedConversation = (): ConversationCache | null => {
@@ -281,7 +261,7 @@ export function WorkBuddyChat() {
     return (
       <div className="flex items-center justify-center flex-1 dark:bg-none dark:bg-background">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-slate-600 dark:text-slate-300">Loading conversation...</p>
         </div>
       </div>
@@ -315,53 +295,23 @@ export function WorkBuddyChat() {
               className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {message.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
               )}
 
-              <Card className={`px-4 py-3 max-w-2xl ${
-                message.role === 'user'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-              }`}>
-                <div className={`text-sm leading-relaxed prose prose-sm max-w-none ${
-                  message.role === 'user'
-                    ? 'prose-invert prose-headings:text-white prose-p:text-white prose-strong:text-white prose-li:text-white prose-code:text-white prose-code:bg-blue-700 prose-pre:bg-blue-800 prose-h1:text-xl prose-h1:font-bold prose-h1:mb-3 prose-h1:mt-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mb-2 prose-h2:mt-3 prose-h3:text-base prose-h3:font-semibold prose-h3:mb-2 prose-h3:mt-3 prose-p:mb-3 prose-p:mt-0'
-                    : 'prose-slate dark:prose-invert prose-code:text-blue-600 dark:prose-code:text-blue-400 prose-code:bg-slate-100 dark:prose-code:bg-slate-700 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-slate-900 prose-pre:rounded-lg prose-pre:border prose-pre:border-slate-700 prose-h1:text-xl prose-h1:font-bold prose-h1:mb-3 prose-h1:mt-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mb-2 prose-h2:mt-3 prose-h3:text-base prose-h3:font-semibold prose-h3:mb-2 prose-h3:mt-3 prose-p:mb-3 prose-p:mt-0'
-                }`}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      pre: ({ node, children, ...props }: any) => (
-                        <pre className="!p-4 !my-3 overflow-x-auto" {...props}>
-                          {children}
-                        </pre>
-                      ),
-                      code: ({ node, className, children, ...props }: any) => {
-                        const isInline = !className?.includes('language-');
-                        if (isInline) {
-                          return (
-                            <code className={className} {...props}>
-                              {children}
-                            </code>
-                          );
-                        }
-                        return (
-                          <code className={`${className} !bg-transparent text-slate-100`} {...props}>
-                            {children}
-                          </code>
-                        );
-                      }
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
+              {message.role === 'user' ? (
+                <div className="px-4 py-3 max-w-2xl rounded-2xl bg-blue-600 dark:bg-blue-700">
+                  <ChatMessage content={message.content} role="user" />
                 </div>
-              </Card>
+              ) : (
+                <Card className="px-5 py-4 max-w-2xl">
+                  <ChatMessage content={message.content} role="assistant" />
+                </Card>
+              )}
 
               {message.role === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-zinc-600 dark:bg-zinc-500 flex items-center justify-center flex-shrink-0">
                   <User className="w-5 h-5 text-white" />
                 </div>
               )}
@@ -370,10 +320,10 @@ export function WorkBuddyChat() {
 
           {isTyping && (
             <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
                 <Bot className="w-5 h-5 text-white" />
               </div>
-              <Card className="px-4 py-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <Card className="px-4 py-3 bg-card border-border">
                 <div className="flex gap-1">
                   <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />

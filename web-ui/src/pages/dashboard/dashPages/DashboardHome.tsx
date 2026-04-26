@@ -75,7 +75,7 @@ const SAMPLE_INSIGHTS = [
     title: 'Peak productivity window',
     body: 'Most task completions happen Tuesday–Wednesday mornings. Consider protecting this time from meetings.',
     tag: 'Scheduling insight',
-    tagColor: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950',
+    tagColor: 'text-accent-foreground bg-accent',
   },
   {
     id: 3,
@@ -95,13 +95,13 @@ const PRIORITY_STYLES: Record<string, string> = {
 const PRIORITY_BADGE: Record<string, string> = {
   high: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950',
   medium: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950',
-  low: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950',
+  low: 'text-accent-foreground bg-accent',
 };
 
 const STATUS_BADGE: Record<string, string> = {
   ACTIVE: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950',
   PAUSED: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950',
-  COMPLETED: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950',
+  COMPLETED: 'text-accent-foreground bg-accent',
   CANCELLED: 'text-muted-foreground bg-muted',
 };
 
@@ -174,8 +174,8 @@ export function DashboardHome() {
                     {isLoading ? '—' : active.length}
                   </p>
                 </div>
-                <div className="p-3 rounded-full bg-blue-50 dark:bg-blue-950">
-                  <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-3 rounded-full bg-accent">
+                  <Target className="w-5 h-5 text-accent-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -258,7 +258,7 @@ export function DashboardHome() {
               active.slice(0, 5).map(challenge => (
                 <Card
                   key={challenge.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  className="cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
                   onClick={() => navigate(`/dashboard/challenges/${challenge.id}`)}
                 >
                   <CardContent className="pt-5 pb-4">
@@ -278,7 +278,7 @@ export function DashboardHome() {
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
                       <div
-                        className="bg-blue-500 h-2 rounded-full transition-all"
+                        className="bg-primary h-2 rounded-full transition-all"
                         style={{ width: `${challenge.progress}%` }}
                       />
                     </div>
@@ -409,12 +409,12 @@ export function DashboardHome() {
         {/* Quick Links */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-4">
           <Card
-            className="cursor-pointer hover:shadow-md transition-shadow"
+            className="cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
             onClick={() => navigate('/dashboard/workbuddychats/workbuddychat')}
           >
             <CardContent className="pt-5 pb-4 flex items-center gap-4">
-              <div className="p-3 rounded-full bg-blue-50 dark:bg-blue-950">
-                <MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 rounded-full bg-accent">
+                <MessageSquare className="w-5 h-5 text-accent-foreground" />
               </div>
               <div>
                 <p className="font-medium text-foreground">Ask your AI coach</p>
@@ -424,7 +424,7 @@ export function DashboardHome() {
           </Card>
 
           <Card
-            className="cursor-pointer hover:shadow-md transition-shadow"
+            className="cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
             onClick={() => navigate('/dashboard/challenges/createchallenge')}
           >
             <CardContent className="pt-5 pb-4 flex items-center gap-4">
@@ -439,7 +439,7 @@ export function DashboardHome() {
           </Card>
 
           <Card
-            className="cursor-pointer hover:shadow-md transition-shadow"
+            className="cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
             onClick={() => navigate('/dashboard/uploads/new-upload')}
           >
             <CardContent className="pt-5 pb-4 flex items-center gap-4">

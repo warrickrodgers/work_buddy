@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, MessageCircle, Calendar, Target, TrendingUp, CheckCircle2, ArrowUp, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { ChatMessage, MarkdownContent } from '@/components/ChatMessage';
 import api from '@/lib/api';
 
 interface Challenge {
@@ -136,7 +135,7 @@ export function ChallengeDetail() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -145,7 +144,7 @@ export function ChallengeDetail() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Challenge Not Found</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Challenge Not Found</h2>
           <Button onClick={goBack}>Back to Challenges</Button>
         </div>
       </div>
@@ -155,22 +154,22 @@ export function ChallengeDetail() {
   return (
     <div className="h-screen flex">
       {/* Left Panel - Challenge Details */}
-      <div className="w-1/3 border-r bg-white overflow-y-auto">
+      <div className="w-1/3 border-r border-border bg-background overflow-y-auto">
         <div className="p-6">
           <Button variant="ghost" size="icon" onClick={goBack} className="mb-4">
             <ArrowLeft className="w-5 h-5" />
           </Button>
 
           <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4 ${
-            challenge.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-            challenge.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700' :
-            'bg-slate-100 text-slate-700'
+            challenge.status === 'ACTIVE' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' :
+            challenge.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' :
+            'bg-muted text-muted-foreground'
           }`}>
             {challenge.status}
           </div>
 
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">{challenge.title}</h1>
-          <p className="text-slate-600 mb-6">{challenge.description}</p>
+          <h1 className="text-2xl font-bold text-foreground mb-2">{challenge.title}</h1>
+          <MarkdownContent content={challenge.description} className="text-muted-foreground mb-6" />
 
           {/* Progress */}
           <Card className="mb-6">
@@ -182,9 +181,9 @@ export function ChallengeDetail() {
                 <span className="text-2xl font-bold">{challenge.progress}%</span>
                 <TrendingUp className="w-5 h-5 text-green-600" />
               </div>
-              <div className="w-full bg-slate-200 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all"
+                  className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all"
                   style={{ width: `${challenge.progress}%` }}
                 />
               </div>
@@ -194,39 +193,39 @@ export function ChallengeDetail() {
           {/* Details */}
           <div className="space-y-4">
             <div>
-              <div className="flex items-center text-sm text-slate-600 mb-1">
+              <div className="flex items-center text-sm text-muted-foreground mb-1">
                 <Target className="w-4 h-4 mr-2" />
                 <span className="font-semibold">Category</span>
               </div>
-              <p className="text-slate-900 ml-6">{challenge.category}</p>
+              <p className="text-foreground ml-6">{challenge.category}</p>
             </div>
 
             <div>
-              <div className="flex items-center text-sm text-slate-600 mb-1">
+              <div className="flex items-center text-sm text-muted-foreground mb-1">
                 <Calendar className="w-4 h-4 mr-2" />
                 <span className="font-semibold">Timeline</span>
               </div>
-              <p className="text-slate-900 ml-6">
+              <p className="text-foreground ml-6">
                 {new Date(challenge.start_date).toLocaleDateString()}
                 {challenge.end_date && ` - ${new Date(challenge.end_date).toLocaleDateString()}`}
               </p>
             </div>
 
             <div>
-              <div className="flex items-center text-sm text-slate-600 mb-1">
+              <div className="flex items-center text-sm text-muted-foreground mb-1">
                 <CheckCircle2 className="w-4 h-4 mr-2" />
                 <span className="font-semibold">Success Criteria</span>
               </div>
-              <p className="text-slate-900 ml-6">{challenge.success_criteria}</p>
+              <MarkdownContent content={challenge.success_criteria} className="ml-6" />
             </div>
 
             {challenge.metrics && (
               <div>
-                <div className="flex items-center text-sm text-slate-600 mb-1">
+                <div className="flex items-center text-sm text-muted-foreground mb-1">
                   <TrendingUp className="w-4 h-4 mr-2" />
                   <span className="font-semibold">Metrics</span>
                 </div>
-                <p className="text-slate-900 ml-6">{challenge.metrics}</p>
+                <MarkdownContent content={challenge.metrics!} className="ml-6" />
               </div>
             )}
           </div>
@@ -236,14 +235,14 @@ export function ChallengeDetail() {
       {/* Right Panel - Chat */}
       <div className="flex-1 flex flex-col">
         {/* Chat Header */}
-        <div className="border-b bg-white p-4">
+        <div className="border-b border-border bg-background p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
               <MessageCircle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="font-semibold text-slate-900">Coaching Session</h2>
-              <p className="text-sm text-slate-500">Chat with Simon about this challenge</p>
+              <h2 className="font-semibold text-foreground">Coaching Session</h2>
+              <p className="text-sm text-muted-foreground">Chat with Simon about this challenge</p>
             </div>
           </div>
         </div>
@@ -252,9 +251,9 @@ export function ChallengeDetail() {
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.length === 0 ? (
             <div className="text-center py-12">
-              <MessageCircle className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-              <h3 className="text-lg font-semibold text-slate-700 mb-2">Start Your Coaching Session</h3>
-              <p className="text-slate-500">Ask Simon for guidance, share progress, or discuss obstacles</p>
+              <MessageCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">Start Your Coaching Session</h3>
+              <p className="text-muted-foreground">Ask Simon for guidance, share progress, or discuss obstacles</p>
             </div>
           ) : (
             messages.map((message) => (
@@ -263,27 +262,23 @@ export function ChallengeDetail() {
                 className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {message.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
                     <MessageCircle className="w-5 h-5 text-white" />
                   </div>
                 )}
 
-                <Card className={`px-4 py-3 max-w-2xl ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white border-slate-200'
-                }`}>
-                  <div className={`text-sm leading-relaxed prose prose-sm max-w-none ${
-                    message.role === 'user' ? 'prose-invert' : 'prose-slate'
-                  }`}>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {message.content}
-                    </ReactMarkdown>
+                {message.role === 'user' ? (
+                  <div className="px-4 py-3 max-w-2xl rounded-2xl bg-blue-600 dark:bg-blue-700">
+                    <ChatMessage content={message.content} role="user" />
                   </div>
-                </Card>
+                ) : (
+                  <Card className="px-5 py-4 max-w-2xl">
+                    <ChatMessage content={message.content} role="assistant" />
+                  </Card>
+                )}
 
                 {message.role === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-zinc-600 dark:bg-zinc-500 flex items-center justify-center flex-shrink-0">
                     <Target className="w-5 h-5 text-white" />
                   </div>
                 )}
@@ -293,14 +288,14 @@ export function ChallengeDetail() {
 
           {isSending && (
             <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
                 <MessageCircle className="w-5 h-5 text-white" />
               </div>
-              <Card className="px-4 py-3 bg-white border-slate-200">
+              <Card className="px-4 py-3 bg-card border-border">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </Card>
             </div>
@@ -308,8 +303,8 @@ export function ChallengeDetail() {
         </div>
 
         {/* Input */}
-        <div className="border-t bg-white p-4">
-          <div className="relative rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-t border-border bg-background p-4">
+          <div className="relative rounded-3xl border border-border bg-background shadow-sm">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -323,8 +318,7 @@ export function ChallengeDetail() {
               onClick={handleSendMessage}
               disabled={!input.trim() || isSending}
               size="icon"
-              className="absolute top-1/2 -translate-y-1/2 right-3 h-8 w-8 rounded-lg"
-              style={{ color: '#ffffff', backgroundColor: '#101828' }}
+              className="absolute top-1/2 -translate-y-1/2 right-3 h-8 w-8 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <ArrowUp className="w-4 h-4" />
             </Button>

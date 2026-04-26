@@ -128,8 +128,8 @@ export function CreateChallenge() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Create New Challenge</h1>
-            <p className="text-slate-600 mt-1">Define a growth opportunity for individuals, teams, or your organization</p>
+            <h1 className="text-3xl font-bold text-foreground">Create New Challenge</h1>
+            <p className="text-muted-foreground mt-1">Define a growth opportunity for individuals, teams, or your organization</p>
           </div>
         </div>
 
@@ -147,9 +147,9 @@ export function CreateChallenge() {
                   placeholder="e.g., Improve Daily Standup Engagement"
                   value={formData.title}
                   onChange={(e) => handleChange('title', e.target.value)}
-                  className={errors.title ? 'border-red-500' : ''}
+                  className={errors.title ? 'border-destructive' : ''}
                 />
-                {errors.title && <p className="text-sm text-red-600 mt-1">{errors.title}</p>}
+                {errors.title && <p className="text-sm text-destructive mt-1">{errors.title}</p>}
               </div>
 
               <div>
@@ -159,9 +159,9 @@ export function CreateChallenge() {
                   placeholder="Explain what this challenge is and why it matters..."
                   value={formData.description}
                   onChange={(e) => handleChange('description', e.target.value)}
-                  className={`min-h-[100px] ${errors.description ? 'border-red-500' : ''}`}
+                  className={`min-h-[100px] ${errors.description ? 'border-destructive' : ''}`}
                 />
-                {errors.description && <p className="text-sm text-red-600 mt-1">{errors.description}</p>}
+                {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -171,7 +171,7 @@ export function CreateChallenge() {
                     id="category"
                     value={formData.category}
                     onChange={(e) => handleChange('category', e.target.value)}
-                    className={`w-full h-10 px-3 rounded-md border ${errors.category ? 'border-red-500' : 'border-slate-200'} bg-white`}
+                    className={`w-full h-10 px-3 rounded-md border ${errors.category ? 'border-destructive' : 'border-input'} bg-background text-foreground`}
                   >
                     <option value="">Select category</option>
                     <option value="Communication">Communication</option>
@@ -181,7 +181,7 @@ export function CreateChallenge() {
                     <option value="Skills">Skills</option>
                     <option value="Process">Process</option>
                   </select>
-                  {errors.category && <p className="text-sm text-red-600 mt-1">{errors.category}</p>}
+                  {errors.category && <p className="text-sm text-destructive mt-1">{errors.category}</p>}
                 </div>
 
                 <div>
@@ -190,7 +190,7 @@ export function CreateChallenge() {
                     id="challengeType"
                     value={formData.challengeType}
                     onChange={(e) => handleChange('challengeType', e.target.value)}
-                    className={`w-full h-10 px-3 rounded-md border ${errors.challengeType ? 'border-red-500' : 'border-slate-200'} bg-white`}
+                    className={`w-full h-10 px-3 rounded-md border ${errors.challengeType ? 'border-destructive' : 'border-input'} bg-background text-foreground`}
                   >
                     <option value="">Select type</option>
                     <option value="habit">Habit Building</option>
@@ -199,7 +199,7 @@ export function CreateChallenge() {
                     <option value="performance">Performance Improvement</option>
                     <option value="accountability">Accountability</option>
                   </select>
-                  {errors.challengeType && <p className="text-sm text-red-600 mt-1">{errors.challengeType}</p>}
+                  {errors.challengeType && <p className="text-sm text-destructive mt-1">{errors.challengeType}</p>}
                 </div>
               </div>
             </CardContent>
@@ -217,14 +217,14 @@ export function CreateChallenge() {
                   id="audienceType"
                   value={formData.audienceType}
                   onChange={(e) => handleChange('audienceType', e.target.value)}
-                  className={`w-full h-10 px-3 rounded-md border ${errors.audienceType ? 'border-red-500' : 'border-slate-200'} bg-white`}
+                  className={`w-full h-10 px-3 rounded-md border ${errors.audienceType ? 'border-destructive' : 'border-input'} bg-background text-foreground`}
                 >
                   <option value="">Select audience</option>
                   <option value="individual">Individual</option>
                   <option value="team">Team</option>
                   <option value="organization">Organization-wide</option>
                 </select>
-                {errors.audienceType && <p className="text-sm text-red-600 mt-1">{errors.audienceType}</p>}
+                {errors.audienceType && <p className="text-sm text-destructive mt-1">{errors.audienceType}</p>}
               </div>
 
               {formData.audienceType === 'individual' && (
@@ -235,9 +235,9 @@ export function CreateChallenge() {
                     placeholder="Enter employee identifier"
                     value={formData.employeeId}
                     onChange={(e) => handleChange('employeeId', e.target.value)}
-                    className={errors.employeeId ? 'border-red-500' : ''}
+                    className={errors.employeeId ? 'border-destructive' : ''}
                   />
-                  {errors.employeeId && <p className="text-sm text-red-600 mt-1">{errors.employeeId}</p>}
+                  {errors.employeeId && <p className="text-sm text-destructive mt-1">{errors.employeeId}</p>}
                 </div>
               )}
 
@@ -249,9 +249,9 @@ export function CreateChallenge() {
                     placeholder="Enter team identifier"
                     value={formData.teamId}
                     onChange={(e) => handleChange('teamId', e.target.value)}
-                    className={errors.teamId ? 'border-red-500' : ''}
+                    className={errors.teamId ? 'border-destructive' : ''}
                   />
-                  {errors.teamId && <p className="text-sm text-red-600 mt-1">{errors.teamId}</p>}
+                  {errors.teamId && <p className="text-sm text-destructive mt-1">{errors.teamId}</p>}
                 </div>
               )}
             </CardContent>
@@ -271,9 +271,9 @@ export function CreateChallenge() {
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => handleChange('startDate', e.target.value)}
-                    className={errors.startDate ? 'border-red-500' : ''}
+                    className={errors.startDate ? 'border-destructive' : ''}
                   />
-                  {errors.startDate && <p className="text-sm text-red-600 mt-1">{errors.startDate}</p>}
+                  {errors.startDate && <p className="text-sm text-destructive mt-1">{errors.startDate}</p>}
                 </div>
 
                 <div>
@@ -284,7 +284,7 @@ export function CreateChallenge() {
                     value={formData.endDate}
                     onChange={(e) => handleChange('endDate', e.target.value)}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Leave blank for ongoing challenges</p>
+                  <p className="text-xs text-muted-foreground mt-1">Leave blank for ongoing challenges</p>
                 </div>
               </div>
             </CardContent>
@@ -303,9 +303,9 @@ export function CreateChallenge() {
                   placeholder="Describe what completion or success looks like..."
                   value={formData.successCriteria}
                   onChange={(e) => handleChange('successCriteria', e.target.value)}
-                  className={`min-h-[80px] ${errors.successCriteria ? 'border-red-500' : ''}`}
+                  className={`min-h-[80px] ${errors.successCriteria ? 'border-destructive' : ''}`}
                 />
-                {errors.successCriteria && <p className="text-sm text-red-600 mt-1">{errors.successCriteria}</p>}
+                {errors.successCriteria && <p className="text-sm text-destructive mt-1">{errors.successCriteria}</p>}
               </div>
 
               <div>
@@ -317,7 +317,7 @@ export function CreateChallenge() {
                   onChange={(e) => handleChange('metrics', e.target.value)}
                   className="min-h-[80px]"
                 />
-                <p className="text-xs text-slate-500 mt-1">Specific, quantifiable measures of progress</p>
+                <p className="text-xs text-muted-foreground mt-1">Specific, quantifiable measures of progress</p>
               </div>
             </CardContent>
           </Card>
@@ -337,7 +337,7 @@ export function CreateChallenge() {
                   onChange={(e) => handleChange('aiNotes', e.target.value)}
                   className="min-h-[100px]"
                 />
-                <p className="text-xs text-slate-500 mt-1">This information helps the AI provide more relevant coaching and insights</p>
+                <p className="text-xs text-muted-foreground mt-1">This information helps the AI provide more relevant coaching and insights</p>
               </div>
             </CardContent>
           </Card>
@@ -349,7 +349,7 @@ export function CreateChallenge() {
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700"
+              className=""
             >
               {isSubmitting ? (
                 <>
