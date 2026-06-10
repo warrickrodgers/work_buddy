@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient, MessageRole } from '@prisma/client';
 import { agentClient } from '../services/agentClient';
+import { persistOutline } from '../services/outlineService';
 
 
 const prisma = new PrismaClient();
@@ -185,6 +186,11 @@ export const addMessageToConversation = async (req: Request, res: Response) => {
 
                 console.log(`Calling agent-server for conversation ${conversationId}`);
 
+                const convUser = await prisma.user.findUnique({
+                    where: { id: conversation.user_id },
+                    select: { organisation_id: true },
+                });
+
                 // Call agent-server to generate AI response
                 const aiResponse = await agentClient.generateResponse(
                     conversation.user_id,
@@ -193,35 +199,91 @@ export const addMessageToConversation = async (req: Request, res: Response) => {
                     conversation.messages.map(msg => ({
                         role: msg.role.toLowerCase(),
                         content: msg.content
-                    }))
+                    })),
+                    convUser?.organisation_id
                 );
 
-                console.log('Received AI response:', aiResponse.response?.substring(0, 100));
+                // ── Outline path ──────────────────────────────────────
+                if (aiResponse.kind === 'outline') {
+                    const challengeId = conversation.challenge_id;
 
-                // Save AI response to database
+                    if (!challengeId) {
+                        console.error('Outline generated but conversation has no challenge_id');
+                        // Fall through to treat preamble as a regular message
+                    } else {
+                        const outline = await persistOutline(
+                            challengeId,
+                            conversation.user_id,
+                            aiResponse.outline
+                        );
+
+                        // Store the preamble as the visible assistant message
+                        const assistantMessage = await prisma.chatMessage.create({
+                            data: {
+                                conversation_id: conversationId,
+                                role: 'ASSISTANT',
+                                content: aiResponse.preamble,
+                            }
+                        });
+
+                        await prisma.conversation.update({
+                            where: { id: conversationId },
+                            data: { updated_at: new Date() }
+                        });
+
+                        return res.status(201).json({
+                            userMessage,
+                            assistantMessage,
+                            kind:      'outline',
+                            outlineId: outline.id,
+                            preamble:  aiResponse.preamble,
+                            outline:   aiResponse.outline, // raw payload — includes phases for frontend
+                        });
+                    }
+                }
+
+                // ── Conversational path ───────────────────────────────
+                const responseContent = aiResponse.content ?? aiResponse.response ?? '';
+                console.log('Received AI response:', responseContent.substring(0, 100));
+
                 const assistantMessage = await prisma.chatMessage.create({
                     data: {
                         conversation_id: conversationId,
                         role: 'ASSISTANT',
-                        content: aiResponse.response
+                        content: responseContent,
                     }
                 });
 
-                // Update conversation timestamp again
                 await prisma.conversation.update({
                     where: { id: conversationId },
                     data: { updated_at: new Date() }
                 });
 
-                // Return both messages
                 return res.status(201).json({
                     userMessage,
-                    assistantMessage
+                    assistantMessage,
                 });
-            } catch (agentError) {
+            } catch (agentError: any) {
                 console.error('Agent service error:', agentError);
-                
-                // Return user message even if AI fails
+
+                const isServiceOverloaded =
+                    agentError?.response?.status === 503 ||
+                    agentError?.response?.data?.retryable === true;
+
+                if (isServiceOverloaded) {
+                    // Roll back the saved user message so the client can retry cleanly
+                    try {
+                        await prisma.chatMessage.delete({ where: { id: userMessage.id } });
+                    } catch {
+                        // Best-effort cleanup — swallow if delete fails
+                    }
+                    return res.status(503).json({
+                        error: 'Simon is currently experiencing increased demand. Please try again shortly.',
+                        retryable: true
+                    });
+                }
+
+                // Non-retryable failure: keep the user message, return partial response
                 return res.status(201).json({
                     userMessage,
                     error: 'AI response temporarily unavailable'

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, MessageCircle, Calendar, Target, TrendingUp, CheckCircle2, ArrowUp, Loader2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Calendar, Target, TrendingUp, CheckCircle2, ArrowUp, Loader2, AlertTriangle, X } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
 import { ChatMessage, MarkdownContent } from '@/components/ChatMessage';
+import { OutlineCard } from '@/components/OutlineCard';
 import api from '@/lib/api';
 
 interface Challenge {
@@ -25,27 +26,44 @@ interface Challenge {
   conversation_id?: number;
 }
 
+interface OutlineMeta {
+  id: number;
+  title: string;
+  phaseCount: number;
+  itemCount: number;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
+  kind?: 'outline';
+  outlineMeta?: OutlineMeta;
 }
 
 export function ChallengeDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [notification, setNotification] = useState<{ message: string; type: 'warning' | 'error' } | null>(null);
 
   useEffect(() => {
     if (id && user) {
       loadChallenge();
     }
   }, [id, user]);
+
+  useEffect(() => {
+    if (!notification) return;
+    const timer = setTimeout(() => setNotification(null), 7000);
+    return () => clearTimeout(timer);
+  }, [notification]);
 
   const loadChallenge = async () => {
     try {
@@ -72,21 +90,24 @@ export function ChallengeDetail() {
   const handleSendMessage = async () => {
     if (!input.trim() || !challenge) return;
 
+    const messageText = input.trim();
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: messageText,
       created_at: new Date().toISOString()
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsSending(true);
+    setNotification(null);
 
     try {
       // Create conversation if doesn't exist
       let conversationId = challenge.conversation_id;
-      
+
       if (!conversationId) {
         const convResponse = await api.post('/conversations', {
           user_id: user!.id,
@@ -101,21 +122,54 @@ export function ChallengeDetail() {
       // Send message
       const response = await api.post(`/conversations/${conversationId}/messages`, {
         role: 'USER',
-        content: input
+        content: messageText
       });
 
       if (response.data.assistantMessage) {
+        const data = response.data;
+        const isOutline = data.kind === 'outline' && data.outline;
         const assistantMessage: Message = {
-          id: response.data.assistantMessage.id.toString(),
+          id: data.assistantMessage.id.toString(),
           role: 'assistant',
-          content: response.data.assistantMessage.content,
-          created_at: response.data.assistantMessage.created_at
+          content: data.assistantMessage.content,
+          created_at: data.assistantMessage.created_at,
+          ...(isOutline ? {
+            kind: 'outline' as const,
+            outlineMeta: {
+              id: data.outlineId,
+              title: data.outline.title,
+              phaseCount: data.outline.phases.length,
+              itemCount: data.outline.phases.reduce(
+                (sum: number, p: any) =>
+                  sum + (p.checklist_items?.length ?? 0) + (p.habits?.length ?? 0) + (p.check_in_prompts?.length ?? 0),
+                0
+              ),
+            },
+          } : {}),
         };
         setMessages(prev => [...prev, assistantMessage]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+
+      const isServiceOverloaded =
+        error?.response?.status === 503 ||
+        error?.response?.data?.retryable === true;
+
+      if (isServiceOverloaded) {
+        // Server rolled back the DB write — remove optimistic bubble and restore input
+        setMessages(prev => prev.filter(m => m.id !== userMessage.id));
+        setInput(messageText);
+        setNotification({
+          message: 'Simon is currently experiencing increased demand. Your message has been restored — please try again shortly.',
+          type: 'warning'
+        });
+      } else {
+        setNotification({
+          message: 'Failed to send message. Please check your connection and try again.',
+          type: 'error'
+        });
+      }
     } finally {
       setIsSending(false);
     }
@@ -128,9 +182,7 @@ export function ChallengeDetail() {
     }
   };
 
-  const goBack = () => {
-    window.location.href = '/dashboard/challenges';
-  };
+  const goBack = () => navigate('/dashboard/challenges');
 
   if (isLoading) {
     return (
@@ -259,27 +311,41 @@ export function ChallengeDetail() {
             messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex flex-col gap-2 ${message.role === 'user' ? 'items-end' : 'items-start'}`}
               >
-                {message.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
-                    <MessageCircle className="w-5 h-5 text-white" />
-                  </div>
-                )}
+                <div className={`flex gap-3 w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {message.role === 'assistant' && (
+                    <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
+                      <MessageCircle className="w-5 h-5 text-white" />
+                    </div>
+                  )}
 
-                {message.role === 'user' ? (
-                  <div className="px-4 py-3 max-w-2xl rounded-2xl bg-blue-600 dark:bg-blue-700">
-                    <ChatMessage content={message.content} role="user" />
-                  </div>
-                ) : (
-                  <Card className="px-5 py-4 max-w-2xl">
-                    <ChatMessage content={message.content} role="assistant" />
-                  </Card>
-                )}
+                  {message.role === 'user' ? (
+                    <div className="px-4 py-3 max-w-2xl rounded-2xl bg-blue-600 dark:bg-blue-700">
+                      <ChatMessage content={message.content} role="user" />
+                    </div>
+                  ) : (
+                    <Card className="px-5 py-4 max-w-2xl">
+                      <ChatMessage content={message.content} role="assistant" />
+                    </Card>
+                  )}
 
-                {message.role === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-zinc-600 dark:bg-zinc-500 flex items-center justify-center flex-shrink-0">
-                    <Target className="w-5 h-5 text-white" />
+                  {message.role === 'user' && (
+                    <div className="w-8 h-8 rounded-full bg-zinc-600 dark:bg-zinc-500 flex items-center justify-center flex-shrink-0">
+                      <Target className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                </div>
+
+                {message.kind === 'outline' && message.outlineMeta && (
+                  <div className="ml-11">
+                    <OutlineCard
+                      outlineId={message.outlineMeta.id}
+                      challengeId={parseInt(id!)}
+                      title={message.outlineMeta.title}
+                      phaseCount={message.outlineMeta.phaseCount}
+                      itemCount={message.outlineMeta.itemCount}
+                    />
                   </div>
                 )}
               </div>
@@ -301,6 +367,25 @@ export function ChallengeDetail() {
             </div>
           )}
         </div>
+
+        {/* Service notification */}
+        {notification && (
+          <div className={`mx-4 mb-1 px-4 py-2.5 rounded-xl border flex items-start gap-2.5 text-sm ${
+            notification.type === 'warning'
+              ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-200'
+              : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800/60 text-red-800 dark:text-red-200'
+          }`}>
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="flex-1 leading-snug">{notification.message}</p>
+            <button
+              onClick={() => setNotification(null)}
+              className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Input */}
         <div className="border-t border-border bg-background p-4">

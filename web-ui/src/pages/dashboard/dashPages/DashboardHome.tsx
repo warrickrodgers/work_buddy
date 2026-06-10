@@ -17,6 +17,7 @@ import {
   Users,
   BarChart3,
   MessageSquare,
+  FileText,
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -121,7 +122,8 @@ export function DashboardHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading]   = useState(true);
+  const [docCount, setDocCount]     = useState<number | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -129,6 +131,13 @@ export function DashboardHome() {
         .then(res => setChallenges(res.data))
         .catch(err => console.error('Failed to load challenges:', err))
         .finally(() => setIsLoading(false));
+
+      api.get('/documents')
+        .then(res => {
+          const docs: any[] = res.data.documents ?? [];
+          setDocCount(docs.filter(d => d.status === 'COMPLETE').length);
+        })
+        .catch(() => setDocCount(0));
     }
   }, [user?.id]);
 
@@ -164,7 +173,7 @@ export function DashboardHome() {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -224,6 +233,25 @@ export function DashboardHome() {
                 </div>
                 <div className={`p-3 rounded-full ${dueSoon > 0 ? 'bg-red-50 dark:bg-red-950' : 'bg-muted'}`}>
                   <Clock className={`w-5 h-5 ${dueSoon > 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate('/dashboard/uploads')}
+          >
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Indexed Documents</p>
+                  <p className="text-3xl font-bold text-foreground mt-1">
+                    {docCount === null ? '—' : docCount}
+                  </p>
+                </div>
+                <div className="p-3 rounded-full bg-sky-50 dark:bg-sky-950">
+                  <FileText className="w-5 h-5 text-sky-600 dark:text-sky-400" />
                 </div>
               </div>
             </CardContent>

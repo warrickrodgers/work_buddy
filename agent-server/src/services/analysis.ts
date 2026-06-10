@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { QueryResult, Metadata } from 'chromadb';
 import { chromaService } from './chromaService';
 import { buildAnalysisPrompt } from '../llm/promptBuilder';
+import { cleanJsonResponse } from '../llm/jsonUtils';
 import { logger } from '../utils/logger';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -72,7 +73,7 @@ async function performAnalysis(
 ): Promise<AnalysisResult> {
   try {
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       generationConfig: {
         temperature: 0.3,
         topP: 0.8,
@@ -124,27 +125,6 @@ async function performAnalysis(
     logger.error('Error performing analysis:', error);
     throw new Error('Failed to analyze data');
   }
-}
-
-/**
- * Clean JSON response from markdown and extra text
- */
-function cleanJsonResponse(text: string): string {
-  let cleaned = text.trim();
-  
-  // Remove markdown code blocks with language identifier
-  cleaned = cleaned.replace(/```json\s*\n/g, '');
-  cleaned = cleaned.replace(/```\s*\n/g, '');
-  cleaned = cleaned.replace(/\n```$/g, '');
-  cleaned = cleaned.replace(/```$/g, '');
-  
-  // Find JSON object if there's text before/after
-  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    cleaned = jsonMatch[0];
-  }
-  
-  return cleaned.trim();
 }
 
 /**

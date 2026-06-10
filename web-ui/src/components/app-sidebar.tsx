@@ -17,8 +17,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import getAppNavigationData from "@/lib/appNavigationData"
+import getAppNavigationData, { type OutlineNav } from "@/lib/appNavigationData"
 import { challengeApi } from "@/lib/api"
+import api from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -26,16 +27,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [navData, setNavData] = useState(getAppNavigationData());
 
   useEffect(() => {
-    const fetchChallenges = async () => {
+    const fetchNav = async () => {
       if (!user?.id) return;
-      
+
       const challenges = await challengeApi.getAll(user.id);
-      // Map to simpler format for navigation
       const simpleChallenges = challenges.map(c => ({ id: c.id, title: c.title }));
-      setNavData(getAppNavigationData(simpleChallenges));
+
+      // Fetch outlines for each challenge in parallel
+      const outlineResults = await Promise.all(
+        challenges.map(c =>
+          api.get(`/challenges/${c.id}/outlines`)
+            .then(r => (r.data.outlines as any[]).map((o): OutlineNav => ({
+              id: o.id,
+              title: o.title,
+              challengeId: c.id,
+            })))
+            .catch(() => [] as OutlineNav[])
+        )
+      );
+      const outlines = outlineResults.flat();
+
+      setNavData(getAppNavigationData(simpleChallenges, outlines));
     };
 
-    fetchChallenges();
+    fetchNav();
   }, [user?.id]);
 
   return (

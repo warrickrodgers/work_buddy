@@ -86,7 +86,7 @@ const assistantComponents: Components = {
   },
 
   pre: ({ children }) => (
-    <pre className="my-3 p-4 rounded-xl bg-muted nm-inset overflow-x-auto text-xs font-mono leading-relaxed">
+    <pre className="my-3 p-4 rounded-xl bg-muted text-foreground overflow-x-auto text-xs font-mono leading-relaxed">
       {children}
     </pre>
   ),
@@ -152,7 +152,7 @@ export function ChatMessage({ content, role, className }: ChatMessageProps) {
   const components = role === 'user' ? userComponents : assistantComponents;
 
   return (
-    <div className={cn('max-w-none', className)}>
+    <div className={cn('max-w-none text-foreground', className)}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {cleaned}
       </ReactMarkdown>

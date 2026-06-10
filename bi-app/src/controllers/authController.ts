@@ -33,7 +33,12 @@ export const createNewUser = async (req: Request, res: Response) => {
                 password_hash,
                 auth_method: 'local',
                 job_title: '',
-                company: ''
+                company: '',
+                organisation: {
+                    create: {
+                        name: `${first_name} ${last_name}'s Organisation`,
+                    }
+                }
             },
         });
 

@@ -19,7 +19,13 @@ interface Challenge {
   title: string;
 }
 
-const getAppNavigationData = (challenges: Challenge[] = []) => {
+interface OutlineNav {
+  id: number;
+  title: string;
+  challengeId: number;
+}
+
+const getAppNavigationData = (challenges: Challenge[] = [], outlines: OutlineNav[] = []) => {
   // Map challenges to navigation items, or show generic "Challenges" if empty
   const challengeItems = challenges.length > 0 
     ? challenges.map(challenge => ({
@@ -59,14 +65,18 @@ const getAppNavigationData = (challenges: Challenge[] = []) => {
       },
       {
         title: "Solutions",
-        url: "#",
+        url: "/dashboard/outlines",
         icon: CompassIcon,
         isActive: false,
         items: [
           {
             title: "Solution Outlines",
-            url: "#",
+            url: "/dashboard/outlines",
           },
+          ...outlines.map(o => ({
+            title: o.title,
+            url: `/dashboard/challenges/${o.challengeId}/outlines/${o.id}`,
+          })),
           {
             title: "To-Do",
             url: "#",
@@ -99,25 +109,25 @@ const getAppNavigationData = (challenges: Challenge[] = []) => {
       },
       {
         title: "Settings",
-        url: "#",
+        url: "/dashboard/settings",
         icon: Settings2,
         isActive: false,
         items: [
           {
             title: "General",
-            url: "#",
+            url: "/dashboard/settings",
+          },
+          {
+            title: "Connectors",
+            url: "/dashboard/settings",
           },
           {
             title: "Team",
-            url: "#",
+            url: "/dashboard/settings",
           },
           {
             title: "Billing",
-            url: "#",
-          },
-          {
-            title: "Limits",
-            url: "#",
+            url: "/dashboard/settings",
           },
         ],
       },
@@ -155,4 +165,4 @@ const getAppNavigationData = (challenges: Challenge[] = []) => {
 };
 
 export default getAppNavigationData;
-export type { Challenge };
+export type { Challenge, OutlineNav };

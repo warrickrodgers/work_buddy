@@ -14,6 +14,9 @@ import { ChallengeDashboard } from './pages/dashboard/dashPages/Challenges';
 import { ChallengeDetail } from './pages/dashboard/dashPages/Challenges/ChallengeDetail';
 import { WorkBuddyChat } from './pages/dashboard/dashPages/WorkBuddyChats/WorkBuddyChat';
 import { DashboardHome } from './pages/dashboard/dashPages/DashboardHome';
+import { OutlineDetail } from './pages/dashboard/dashPages/Outlines/OutlineDetail';
+import { OutlineList } from './pages/dashboard/dashPages/Outlines/OutlineList';
+import { Settings } from './pages/dashboard/dashPages/Settings/Settings';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -35,14 +38,17 @@ function App() {
               </PrivateRoute>
             }
           >
-            {/* Nested routes within Dashboard (the "inset") */}
+            {/* Nested routes within Dashboard (the "inset") — use relative paths in RR v7 */}
             <Route index element={<DashboardHome />} />
-            <Route path="/dashboard/challenges/" element={<ChallengeDashboard />}/>
-            <Route path="/dashboard/challenges/createchallenge" element={<CreateChallenge />}/>
-            <Route path="/dashboard/challenges/:id" element={<ChallengeDetail />} />
-            <Route path="/dashboard/workbuddychats/workbuddychat" element={<WorkBuddyChat />}/>
-            <Route path="/dashboard/uploads" element={<UploadsInsetPage />}></Route>
-            <Route path="/dashboard/uploads/new-upload" element={<NewUploadInsetPage />}/>
+            <Route path="challenges" element={<ChallengeDashboard />}/>
+            <Route path="challenges/createchallenge" element={<CreateChallenge />}/>
+            <Route path="challenges/:id/outlines/:outlineId" element={<OutlineDetail />} />
+            <Route path="challenges/:id" element={<ChallengeDetail />} />
+            <Route path="outlines" element={<OutlineList />} />
+            <Route path="workbuddychats/workbuddychat" element={<WorkBuddyChat />}/>
+            <Route path="uploads" element={<UploadsInsetPage />}/>
+            <Route path="uploads/new-upload" element={<NewUploadInsetPage />}/>
+            <Route path="settings" element={<Settings />}/>
           </Route>
         </Routes>
       </Router>

@@ -8,21 +8,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Organisation {
+  id          Int                  @id @default(autoincrement())
+  name        String
+  created_at  DateTime             @default(now())
+  updated_at  DateTime             @updatedAt
+  users       User[]
+  documents   IngestionDocument[]
+}
+
 model User {
-    id Int @id @default(autoincrement())
-    email String @unique
-    first_name String
-    last_name String
-    created_at DateTime @default(now())
-    last_login DateTime @default(now())
-    job_title String
-    company String
-    password_hash String
-    auth_method String
+    id              Int                @id @default(autoincrement())
+    email           String             @unique
+    first_name      String
+    last_name       String
+    created_at      DateTime           @default(now())
+    last_login      DateTime           @default(now())
+    job_title       String
+    company         String
+    password_hash   String
+    auth_method     String
+    organisation    Organisation       @relation(fields: [organisation_id], references: [id])
+    organisation_id Int
     problem_request ProblemRequest[]
     insight_feedback InsightFeedback[]
-    conversations Conversation[]
-    challenges Challenge[]
+    conversations   Conversation[]
+    challenges      Challenge[]
+    ingestion_documents IngestionDocument[]
 }
 
 // For one-time data analysis
@@ -87,6 +99,49 @@ model MetricTemplate {
     created_at DateTime @default(now())
 }
 
+model IngestionDocument {
+  id              String           @id @default(uuid())
+  organisation    Organisation     @relation(fields: [organisation_id], references: [id])
+  organisation_id Int
+  uploaded_by     User             @relation(fields: [uploaded_by_id], references: [id])
+  uploaded_by_id  Int
+  filename        String
+  file_type       FileType
+  document_type   DocumentType
+  status          IngestionStatus  @default(PENDING)
+  chunk_count     Int              @default(0)
+  tags            String[]
+  error_message   String?          @db.Text
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+
+  @@index([organisation_id])
+  @@index([uploaded_by_id])
+}
+
+enum FileType {
+  PDF
+  CSV
+  DOCX
+  MD
+  TXT
+}
+
+enum DocumentType {
+  SURVEY
+  TURNOVER
+  POLICY
+  REPORT
+  CUSTOM
+}
+
+enum IngestionStatus {
+  PENDING
+  PROCESSING
+  COMPLETE
+  FAILED
+}
+
 enum ProblemRequestStatus {
     PENDING
     PROCESSING
@@ -140,7 +195,8 @@ model Challenge {
   // Dedicated chat thread for this challenge
   conversation      Conversation?
   check_ins         ChallengeCheckIn[]
-  
+  solution_outlines SolutionOutline[]
+
   @@index([user_id])
   @@index([status])
 }
@@ -205,4 +261,100 @@ model ChatMessage {
 enum MessageRole {
   USER
   ASSISTANT
+}
+
+enum OutlineStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum HabitCadence {
+  DAILY
+  WEEKLY
+}
+
+model SolutionOutline {
+  id                Int            @id @default(autoincrement())
+  challenge         Challenge      @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  challenge_id      Int
+  user_id           Int
+  title             String
+  why               String         @db.Text
+  source_message_id Int?
+  status            OutlineStatus  @default(ACTIVE)
+  phases            OutlinePhase[]
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+  archived_at       DateTime?
+
+  @@index([challenge_id])
+  @@index([user_id])
+}
+
+model OutlinePhase {
+  id               Int              @id @default(autoincrement())
+  outline          SolutionOutline  @relation(fields: [outline_id], references: [id], onDelete: Cascade)
+  outline_id       Int
+  order_index      Int
+  title            String
+  timeframe        String?
+  purpose          String           @db.Text
+  checklist_items  ChecklistItem[]
+  habits           Habit[]
+  check_in_prompts CheckInPrompt[]
+
+  @@unique([outline_id, order_index])
+  @@index([outline_id])
+}
+
+model ChecklistItem {
+  id             Int          @id @default(autoincrement())
+  phase          OutlinePhase @relation(fields: [phase_id], references: [id], onDelete: Cascade)
+  phase_id       Int
+  order_index    Int
+  description    String       @db.Text
+  why_it_matters String?      @db.Text
+  is_complete    Boolean      @default(false)
+  completed_at   DateTime?
+
+  @@index([phase_id])
+}
+
+model Habit {
+  id             Int          @id @default(autoincrement())
+  phase          OutlinePhase @relation(fields: [phase_id], references: [id], onDelete: Cascade)
+  phase_id       Int
+  order_index    Int
+  description    String       @db.Text
+  cadence        HabitCadence
+  why_it_matters String?      @db.Text
+  logs           HabitLog[]
+
+  @@index([phase_id])
+}
+
+model HabitLog {
+  id         Int      @id @default(autoincrement())
+  habit      Habit    @relation(fields: [habit_id], references: [id], onDelete: Cascade)
+  habit_id   Int
+  logged_for DateTime @db.Date
+  notes      String?  @db.Text
+  created_at DateTime @default(now())
+
+  @@unique([habit_id, logged_for])
+  @@index([habit_id])
+}
+
+model CheckInPrompt {
+  id            Int          @id @default(autoincrement())
+  phase         OutlinePhase @relation(fields: [phase_id], references: [id], onDelete: Cascade)
+  phase_id      Int
+  order_index   Int
+  question      String       @db.Text
+  scheduled_for DateTime?
+  response      String?      @db.Text
+  responded_at  DateTime?
+
+  @@index([phase_id])
 }

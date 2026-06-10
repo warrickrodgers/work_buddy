@@ -1,9 +1,9 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -11,9 +11,17 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
   Dropzone,
   DropZoneArea,
-  DropzoneDescription,
   DropzoneFileList,
   DropzoneFileListItem,
   DropzoneMessage,
@@ -24,95 +32,127 @@ import {
 import { CloudUploadIcon, Trash2Icon, FileCheck2, FileX2 } from "lucide-react";
 import api from "@/lib/api"
 
+const DOCUMENT_TYPES = [
+  { value: 'survey',   label: 'Survey' },
+  { value: 'turnover', label: 'Turnover Report' },
+  { value: 'policy',   label: 'Policy' },
+  { value: 'report',   label: 'Report' },
+  { value: 'custom',   label: 'Custom' },
+];
+
 function NewUploadInsetPage() {
-  const [uploading, setUploading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [problemRequestId, setProblemRequestId] = useState<number>(2)
+  const navigate = useNavigate();
+  const [uploading, setUploading]       = useState(false);
+  const [documentType, setDocumentType] = useState<string>('custom');
+  const [tagsInput, setTagsInput]       = useState('');
+  const [error, setError]               = useState<string | null>(null);
 
   const dropzone = useDropzone({
     onDropFile: async (file: File) => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return {
-        status: "success",
-        result: URL.createObjectURL(file),
-      };
+      return { status: "success", result: URL.createObjectURL(file) };
     },
     validation: {
       accept: {
-        "application/pdf": [".pdf"],
-        "application/msword": [".doc"],
+        "application/pdf":    [".pdf"],
+        "text/csv":           [".csv"],
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-        "application/vnd.ms-excel": [".xls"],
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-        "text/plain": [".txt"],
+        "text/markdown":      [".md"],
+        "text/plain":         [".txt"],
       },
-      maxSize: 5 * 1024 * 1024,
-      maxFiles: 10,
+      maxSize: 20 * 1024 * 1024,
+      maxFiles: 1,
     },
   });
 
   const handleUpload = async () => {
+    setError(null);
+    const fileStatus = dropzone.fileStatuses[0];
+    if (!fileStatus) return;
+
     setUploading(true);
-    if(dropzone.fileStatuses?.length > 0) {
+    try {
+      const tags = tagsInput
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean);
+
       const formData = new FormData();
-      formData.append('problem_request_id', problemRequestId.toString());
-      const filesToUpload = dropzone.fileStatuses.map((fileStatus) => fileStatus.file);
-      filesToUpload.forEach((file) => {
-        formData.append('files', file);
+      formData.append('file', fileStatus.file);
+      formData.append('document_type', documentType);
+      if (tags.length > 0) formData.append('tags', tags.join(','));
+
+      await api.post('/documents', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      api.post('/uploads/file-upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
-        .then((response) => {
-          if([200, 201].includes(response.status)) {
-            setSuccess(true);
-          }
-          else {
-            setSuccess(false);
-          }
-        })
-        .catch((error) => {
-          setSuccess(false);
-          console.error('Error uploading files:', error);
-        });
+
+      navigate('/dashboard/uploads');
+    } catch (err: any) {
+      const msg = err?.response?.data?.error ?? 'Upload failed. Please try again.';
+      setError(msg);
+    } finally {
+      setUploading(false);
     }
-    else {
-      console.error('Nothing to upload')
-    }
-    setUploading(false);
-  }
+  };
 
   return (
-    <div className="min-h-screen flex space-y-4 items-center justify-center">
-      <Card className="w-full max-w-lg">
+    <div className="p-8 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Upload Document</h1>
+
+      <Card className="nm-raised border-0">
         <CardHeader>
-          <CardTitle>Upload Files</CardTitle>
+          <CardTitle>New Document</CardTitle>
           <CardDescription>
-            Upload up to <b>10</b> files smaller than <b>5MB</b> each to help the AI model develop the training plan. 
+            Upload a PDF, CSV, DOCX, Markdown, or plain-text file (max 20 MB).
+            Simon will use it to ground his coaching in your organisation's context.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="document-type">Document type</Label>
+            <Select value={documentType} onValueChange={setDocumentType}>
+              <SelectTrigger id="document-type" className="nm-inset border-0">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                {DOCUMENT_TYPES.map(dt => (
+                  <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tags">
+              Tags{' '}
+              <span className="text-muted-foreground text-xs">(optional, comma-separated)</span>
+            </Label>
+            <Input
+              id="tags"
+              className="nm-inset border-0"
+              placeholder="e.g. Q1, engineering, 2024"
+              value={tagsInput}
+              onChange={e => setTagsInput(e.target.value)}
+            />
+          </div>
+
           <Dropzone {...dropzone}>
             <div>
-              <div className="flex justify-between">
-                <DropzoneMessage />
-              </div>
+              <DropzoneMessage />
               <DropZoneArea className="border-dashed">
                 <DropzoneTrigger className="flex flex-col items-center gap-4 bg-transparent p-10 text-center text-sm">
                   <CloudUploadIcon className="size-8" />
                   <div>
-                    <p className="font-semibold">Upload files</p>
+                    <p className="font-semibold">Drop file here or click to browse</p>
                     <p className="text-sm text-muted-foreground">
-                      Click here or drag and drop to upload
+                      PDF, CSV, DOCX, MD, TXT — up to 20 MB
                     </p>
                   </div>
                 </DropzoneTrigger>
               </DropZoneArea>
             </div>
-  
-            <DropzoneFileList className="grid gap-3 p-0 md:grid-cols-2 lg:grid-cols-3">
+
+            <DropzoneFileList className="mt-3 grid gap-3 p-0">
               {dropzone.fileStatuses.map((file) => (
                 <DropzoneFileListItem
                   className="overflow-hidden rounded-md bg-secondary p-0 shadow-sm"
@@ -140,27 +180,31 @@ function NewUploadInsetPage() {
                       </p>
                     </div>
                     <DropzoneRemoveFile>
-                      <Trash2Icon className="size-4 primary-foreground" />
+                      <Trash2Icon className="size-4" />
                     </DropzoneRemoveFile>
                   </div>
                 </DropzoneFileListItem>
               ))}
             </DropzoneFileList>
           </Dropzone>
+
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
         </CardContent>
-        <CardFooter className="flex-col gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleUpload} 
-            className="w-30"
+
+        <CardFooter>
+          <Button
+            onClick={handleUpload}
             disabled={uploading || dropzone.fileStatuses.length === 0}
+            className="w-full"
           >
-            {uploading ? "Uploading..." : "Upload"}
+            {uploading ? "Uploading…" : "Upload"}
           </Button>
         </CardFooter>
       </Card>
     </div>
   );
-};
+}
 
-export default NewUploadInsetPage
+export default NewUploadInsetPage;

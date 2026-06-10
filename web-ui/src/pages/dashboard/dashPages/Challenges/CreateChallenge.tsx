@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '../../../../context/AuthContext';
 
@@ -28,12 +28,23 @@ interface ChallengeFormData {
   aiNotes: string;
 }
 
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2 text-sm">
+      <span className="text-muted-foreground min-w-[140px] shrink-0">{label}</span>
+      <span className="text-foreground break-words">{value}</span>
+    </div>
+  );
+}
+
 export function CreateChallenge() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ChallengeFormData, string>>>({});
-  
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isWizardMode, setIsWizardMode] = useState(true);
+
   const [formData, setFormData] = useState<ChallengeFormData>({
     title: '',
     description: '',
@@ -78,6 +89,49 @@ export function CreateChallenge() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateStep = (step: number): boolean => {
+    const newErrors: Partial<Record<keyof ChallengeFormData, string>> = {};
+
+    if (step === 1) {
+      if (!formData.title.trim()) newErrors.title = 'Title is required';
+      if (!formData.description.trim()) newErrors.description = 'Description is required';
+      if (!formData.category) newErrors.category = 'Category is required';
+      if (!formData.challengeType) newErrors.challengeType = 'Challenge type is required';
+    }
+
+    if (step === 2) {
+      if (!formData.audienceType) newErrors.audienceType = 'Audience type is required';
+      if (formData.audienceType === 'individual' && !formData.employeeId.trim()) {
+        newErrors.employeeId = 'Employee ID is required for individual challenges';
+      }
+      if (formData.audienceType === 'team' && !formData.teamId.trim()) {
+        newErrors.teamId = 'Team ID is required for team challenges';
+      }
+    }
+
+    if (step === 3) {
+      if (!formData.startDate) newErrors.startDate = 'Start date is required';
+      if (!formData.successCriteria.trim()) newErrors.successCriteria = 'Success criteria is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) setCurrentStep(s => s + 1);
+  };
+
+  const handleBack = () => {
+    setErrors({});
+    setCurrentStep(s => s - 1);
+  };
+
+  const handleToggleMode = () => {
+    setIsWizardMode(m => !m);
+    setErrors({});
+  };
+
   const handleSubmit = async () => {
     if (!validate()) return;
     if (!user) return;
@@ -101,15 +155,13 @@ export function CreateChallenge() {
         ai_notes: formData.aiNotes || null
       });
 
-      console.log('Challenge created:', response.data); // Add logging
-      
-      // Navigate using React Router instead of window.location
-      navigate('/dashboard/challenges', { 
-        state: { refresh: true, newChallengeId: response.data.id } 
+      console.log('Challenge created:', response.data);
+
+      navigate('/dashboard/challenges', {
+        state: { refresh: true, newChallengeId: response.data.id }
       });
     } catch (error: any) {
       console.error('Error creating challenge:', error);
-      // More detailed error message
       if (error.response) {
         alert(`Failed to create challenge: ${error.response.data.error || 'Unknown error'}`);
       } else {
@@ -120,24 +172,87 @@ export function CreateChallenge() {
     }
   };
 
-  return (
-    <div className="min-h-screen  p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6 flex items-center gap-4">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Create New Challenge</h1>
-            <p className="text-muted-foreground mt-1">Define a growth opportunity for individuals, teams, or your organization</p>
-          </div>
-        </div>
+  const selectClass = (field: keyof ChallengeFormData) =>
+    `w-full h-10 px-3 rounded-md border ${errors[field] ? 'border-destructive' : 'border-border/50'} bg-background text-foreground text-sm`;
 
-        <div className="space-y-6">
+  // ── Wizard helpers ──────────────────────────────────────────────────────────
+
+  const renderProgressIndicator = () => (
+    <div className="flex items-center gap-2 mb-6">
+      {[1, 2, 3, 4].map(step => (
+        <div key={step} className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+            step < currentStep
+              ? 'bg-primary text-primary-foreground'
+              : step === currentStep
+              ? 'bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-1'
+              : 'bg-muted text-muted-foreground'
+          }`}>
+            {step < currentStep ? '✓' : step}
+          </div>
+          {step < 4 && (
+            <div className={`h-px w-8 transition-colors ${step < currentStep ? 'bg-primary' : 'bg-border'}`} />
+          )}
+        </div>
+      ))}
+      <span className="text-sm text-muted-foreground ml-2">Step {currentStep} of 4</span>
+    </div>
+  );
+
+  const renderReviewSummary = () => (
+    <div className="mt-2 rounded-md bg-muted/40 p-4 space-y-2.5">
+      <p className="text-sm font-medium text-foreground mb-1">Review your challenge</p>
+      <ReviewRow label="Title" value={formData.title} />
+      <ReviewRow label="Description" value={formData.description} />
+      <ReviewRow label="Category" value={formData.category} />
+      <ReviewRow label="Challenge Type" value={formData.challengeType} />
+      <ReviewRow label="Audience" value={formData.audienceType} />
+      {formData.employeeId && <ReviewRow label="Employee ID" value={formData.employeeId} />}
+      {formData.teamId && <ReviewRow label="Team ID" value={formData.teamId} />}
+      <ReviewRow label="Start Date" value={formData.startDate} />
+      {formData.endDate && <ReviewRow label="End Date" value={formData.endDate} />}
+      <ReviewRow label="Success Criteria" value={formData.successCriteria} />
+      {formData.metrics && <ReviewRow label="KPIs / Metrics" value={formData.metrics} />}
+    </div>
+  );
+
+  const renderWizardNav = () => (
+    <div className="flex justify-between mt-6">
+      <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
+        <ChevronLeft className="w-4 h-4 mr-1" />
+        Back
+      </Button>
+      {currentStep < 4 ? (
+        <Button onClick={handleNext}>
+          Next
+          <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
+      ) : (
+        <Button onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Create Challenge
+            </>
+          )}
+        </Button>
+      )}
+    </div>
+  );
+
+  const renderWizardStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Core details about the challenge</CardDescription>
+              <CardTitle>What's the Challenge?</CardTitle>
+              <CardDescription>Core details about what you're working on</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -171,7 +286,7 @@ export function CreateChallenge() {
                     id="category"
                     value={formData.category}
                     onChange={(e) => handleChange('category', e.target.value)}
-                    className={`w-full h-10 px-3 rounded-md border ${errors.category ? 'border-destructive' : 'border-input'} bg-background text-foreground`}
+                    className={selectClass('category')}
                   >
                     <option value="">Select category</option>
                     <option value="Communication">Communication</option>
@@ -190,7 +305,7 @@ export function CreateChallenge() {
                     id="challengeType"
                     value={formData.challengeType}
                     onChange={(e) => handleChange('challengeType', e.target.value)}
-                    className={`w-full h-10 px-3 rounded-md border ${errors.challengeType ? 'border-destructive' : 'border-input'} bg-background text-foreground`}
+                    className={selectClass('challengeType')}
                   >
                     <option value="">Select type</option>
                     <option value="habit">Habit Building</option>
@@ -202,13 +317,18 @@ export function CreateChallenge() {
                   {errors.challengeType && <p className="text-sm text-destructive mt-1">{errors.challengeType}</p>}
                 </div>
               </div>
+
+              {renderWizardNav()}
             </CardContent>
           </Card>
+        );
 
+      case 2:
+        return (
           <Card>
             <CardHeader>
-              <CardTitle>Target Audience</CardTitle>
-              <CardDescription>Who is this challenge for?</CardDescription>
+              <CardTitle>Who is it for?</CardTitle>
+              <CardDescription>Define the target audience for this challenge</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -217,7 +337,7 @@ export function CreateChallenge() {
                   id="audienceType"
                   value={formData.audienceType}
                   onChange={(e) => handleChange('audienceType', e.target.value)}
-                  className={`w-full h-10 px-3 rounded-md border ${errors.audienceType ? 'border-destructive' : 'border-input'} bg-background text-foreground`}
+                  className={selectClass('audienceType')}
                 >
                   <option value="">Select audience</option>
                   <option value="individual">Individual</option>
@@ -254,13 +374,18 @@ export function CreateChallenge() {
                   {errors.teamId && <p className="text-sm text-destructive mt-1">{errors.teamId}</p>}
                 </div>
               )}
+
+              {renderWizardNav()}
             </CardContent>
           </Card>
+        );
 
+      case 3:
+        return (
           <Card>
             <CardHeader>
-              <CardTitle>Timeline</CardTitle>
-              <CardDescription>When does this challenge take place?</CardDescription>
+              <CardTitle>Timeline & Success</CardTitle>
+              <CardDescription>When does this run, and how will you measure progress?</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -287,15 +412,7 @@ export function CreateChallenge() {
                   <p className="text-xs text-muted-foreground mt-1">Leave blank for ongoing challenges</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Success & Metrics</CardTitle>
-              <CardDescription>How will progress be measured?</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="successCriteria" className="my-3">Success Criteria *</Label>
                 <Textarea
@@ -319,15 +436,20 @@ export function CreateChallenge() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">Specific, quantifiable measures of progress</p>
               </div>
+
+              {renderWizardNav()}
             </CardContent>
           </Card>
+        );
 
+      case 4:
+        return (
           <Card>
             <CardHeader>
               <CardTitle>AI Coach Context</CardTitle>
-              <CardDescription>Additional context for Simon to provide better guidance</CardDescription>
+              <CardDescription>Optional context for Simon, then review and submit</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="aiNotes" className="my-3">AI Notes (Optional)</Label>
                 <Textarea
@@ -339,32 +461,280 @@ export function CreateChallenge() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">This information helps the AI provide more relevant coaching and insights</p>
               </div>
+
+              {renderReviewSummary()}
+              {renderWizardNav()}
             </CardContent>
           </Card>
+        );
 
-          <div className="flex gap-4 justify-end">
-            <Button variant="outline" disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className=""
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Create Challenge
-                </>
-              )}
-            </Button>
+      default:
+        return null;
+    }
+  };
+
+  // ── Full form (preserved exactly) ──────────────────────────────────────────
+
+  const renderFullForm = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Basic Information</CardTitle>
+          <CardDescription>Core details about the challenge</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="title" className="my-3">Challenge Title *</Label>
+            <Input
+              id="title"
+              placeholder="e.g., Improve Daily Standup Engagement"
+              value={formData.title}
+              onChange={(e) => handleChange('title', e.target.value)}
+              className={errors.title ? 'border-destructive' : ''}
+            />
+            {errors.title && <p className="text-sm text-destructive mt-1">{errors.title}</p>}
           </div>
+
+          <div>
+            <Label htmlFor="description" className="my-3">Description *</Label>
+            <Textarea
+              id="description"
+              placeholder="Explain what this challenge is and why it matters..."
+              value={formData.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              className={`min-h-[100px] ${errors.description ? 'border-destructive' : ''}`}
+            />
+            {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="category" className="my-3">Category *</Label>
+              <select
+                id="category"
+                value={formData.category}
+                onChange={(e) => handleChange('category', e.target.value)}
+                className={`w-full h-10 px-3 rounded-md border ${errors.category ? 'border-destructive' : 'border-input'} bg-background text-foreground`}
+              >
+                <option value="">Select category</option>
+                <option value="Communication">Communication</option>
+                <option value="Productivity">Productivity</option>
+                <option value="Leadership">Leadership</option>
+                <option value="Culture">Culture</option>
+                <option value="Skills">Skills</option>
+                <option value="Process">Process</option>
+              </select>
+              {errors.category && <p className="text-sm text-destructive mt-1">{errors.category}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="challengeType" className="my-3">Challenge Type *</Label>
+              <select
+                id="challengeType"
+                value={formData.challengeType}
+                onChange={(e) => handleChange('challengeType', e.target.value)}
+                className={`w-full h-10 px-3 rounded-md border ${errors.challengeType ? 'border-destructive' : 'border-input'} bg-background text-foreground`}
+              >
+                <option value="">Select type</option>
+                <option value="habit">Habit Building</option>
+                <option value="skill">Skill Development</option>
+                <option value="behavior">Behavior Change</option>
+                <option value="performance">Performance Improvement</option>
+                <option value="accountability">Accountability</option>
+              </select>
+              {errors.challengeType && <p className="text-sm text-destructive mt-1">{errors.challengeType}</p>}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Target Audience</CardTitle>
+          <CardDescription>Who is this challenge for?</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="audienceType" className="my-3">Audience Type *</Label>
+            <select
+              id="audienceType"
+              value={formData.audienceType}
+              onChange={(e) => handleChange('audienceType', e.target.value)}
+              className={`w-full h-10 px-3 rounded-md border ${errors.audienceType ? 'border-destructive' : 'border-input'} bg-background text-foreground`}
+            >
+              <option value="">Select audience</option>
+              <option value="individual">Individual</option>
+              <option value="team">Team</option>
+              <option value="organization">Organization-wide</option>
+            </select>
+            {errors.audienceType && <p className="text-sm text-destructive mt-1">{errors.audienceType}</p>}
+          </div>
+
+          {formData.audienceType === 'individual' && (
+            <div>
+              <Label htmlFor="employeeId" className="my-3">Employee ID *</Label>
+              <Input
+                id="employeeId"
+                placeholder="Enter employee identifier"
+                value={formData.employeeId}
+                onChange={(e) => handleChange('employeeId', e.target.value)}
+                className={errors.employeeId ? 'border-destructive' : ''}
+              />
+              {errors.employeeId && <p className="text-sm text-destructive mt-1">{errors.employeeId}</p>}
+            </div>
+          )}
+
+          {formData.audienceType === 'team' && (
+            <div>
+              <Label htmlFor="teamId" className="my-3">Team ID *</Label>
+              <Input
+                id="teamId"
+                placeholder="Enter team identifier"
+                value={formData.teamId}
+                onChange={(e) => handleChange('teamId', e.target.value)}
+                className={errors.teamId ? 'border-destructive' : ''}
+              />
+              {errors.teamId && <p className="text-sm text-destructive mt-1">{errors.teamId}</p>}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Timeline</CardTitle>
+          <CardDescription>When does this challenge take place?</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="startDate" className="my-3">Start Date *</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => handleChange('startDate', e.target.value)}
+                className={errors.startDate ? 'border-destructive' : ''}
+              />
+              {errors.startDate && <p className="text-sm text-destructive mt-1">{errors.startDate}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="endDate" className="my-3">End Date (Optional)</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => handleChange('endDate', e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Leave blank for ongoing challenges</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Success & Metrics</CardTitle>
+          <CardDescription>How will progress be measured?</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="successCriteria" className="my-3">Success Criteria *</Label>
+            <Textarea
+              id="successCriteria"
+              placeholder="Describe what completion or success looks like..."
+              value={formData.successCriteria}
+              onChange={(e) => handleChange('successCriteria', e.target.value)}
+              className={`min-h-[80px] ${errors.successCriteria ? 'border-destructive' : ''}`}
+            />
+            {errors.successCriteria && <p className="text-sm text-destructive mt-1">{errors.successCriteria}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="metrics" className="my-3">Measurable KPIs (Optional)</Label>
+            <Textarea
+              id="metrics"
+              placeholder="e.g., 'Increase meeting attendance by 20%', 'Reduce response time to under 2 hours'"
+              value={formData.metrics}
+              onChange={(e) => handleChange('metrics', e.target.value)}
+              className="min-h-[80px]"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Specific, quantifiable measures of progress</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>AI Coach Context</CardTitle>
+          <CardDescription>Additional context for Simon to provide better guidance</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div>
+            <Label htmlFor="aiNotes" className="my-3">AI Notes (Optional)</Label>
+            <Textarea
+              id="aiNotes"
+              placeholder="Any additional context, constraints, or special considerations the AI should know about..."
+              value={formData.aiNotes}
+              onChange={(e) => handleChange('aiNotes', e.target.value)}
+              className="min-h-[100px]"
+            />
+            <p className="text-xs text-muted-foreground mt-1">This information helps the AI provide more relevant coaching and insights</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex gap-4 justify-end">
+        <Button variant="outline" disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Create Challenge
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+
+  // ── Page shell ──────────────────────────────────────────────────────────────
+
+  return (
+    <div className="min-h-screen p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6 flex items-center gap-4">
+          <Button variant="ghost" size="icon">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold text-foreground">Create New Challenge</h1>
+            <p className="text-muted-foreground mt-1">Define a growth opportunity for individuals, teams, or your organization</p>
+          </div>
+          <button
+            onClick={handleToggleMode}
+            className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors shrink-0"
+          >
+            {isWizardMode ? 'Switch to full form' : 'Switch to guided wizard'}
+          </button>
         </div>
+
+        {isWizardMode ? (
+          <div>
+            {renderProgressIndicator()}
+            {renderWizardStep()}
+          </div>
+        ) : (
+          renderFullForm()
+        )}
       </div>
     </div>
   );

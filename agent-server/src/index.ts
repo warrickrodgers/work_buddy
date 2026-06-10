@@ -4,12 +4,14 @@ import cors from 'cors';
 import { logger } from './utils/logger';
 import { chromaService } from './services/chromaService';
 import { loadKnowledgeBase } from './services/knowledgeLoader';
+import { intentClassifier } from './services/intentClassifier';
 
 // Import routes
 import healthRoute from './routes/health';
 import analyzeRoute from './routes/analyze';
 import generatePlanRoute from './routes/generatePlan';
 import conversationRoutes from './routes/conversations';
+import documentRoutes from './routes/documents';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -19,13 +21,14 @@ app.use(cors({
   origin: process.env.BI_APP_URL || 'http://localhost:3000',
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Routes
 app.use('/health', healthRoute);
 app.use('/analyze', analyzeRoute);
 app.use('/generate-plan', generatePlanRoute);
 app.use('/api/conversations', conversationRoutes);
+app.use('/api/documents', documentRoutes);
 
 // Start server with ChromaDB and knowledge base
 async function startServer() {
@@ -37,6 +40,10 @@ async function startServer() {
     // Load knowledge base into ChromaDB
     await loadKnowledgeBase();
     logger.info('Knowledge base loaded');
+
+    // Pre-embed intent classifier exemplars
+    await intentClassifier.initialize();
+    logger.info('Intent classifier ready');
     
     // Start Express server
     app.listen(PORT, () => {
