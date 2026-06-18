@@ -38,7 +38,7 @@ export function WorkBuddyChat() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-slate-600">Loading user information...</p>
+          <p className="text-muted-foreground">Loading user information...</p>
         </div>
       </div>
     );
@@ -262,7 +262,7 @@ export function WorkBuddyChat() {
       <div className="flex items-center justify-center flex-1 dark:bg-none dark:bg-background">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-300">Loading conversation...</p>
+          <p className="text-muted-foreground">Loading conversation...</p>
         </div>
       </div>
     );
@@ -283,9 +283,9 @@ export function WorkBuddyChat() {
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 && (
             <div className="text-center py-12">
-              <Bot className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-              <h2 className="text-xl font-medium text-slate-600 dark:text-slate-300 mb-2">Start a conversation</h2>
-              <p className="text-slate-400 dark:text-slate-500">Ask me anything about improving team efficiency</p>
+              <Bot className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <h2 className="text-xl font-medium text-muted-foreground mb-2">Start a conversation</h2>
+              <p className="text-muted-foreground/60">Ask me anything about improving team efficiency</p>
             </div>
           )}
 
@@ -295,24 +295,24 @@ export function WorkBuddyChat() {
               className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {message.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-5 h-5 text-primary-foreground" />
                 </div>
               )}
 
               {message.role === 'user' ? (
-                <div className="px-4 py-3 max-w-2xl rounded-2xl bg-blue-600 dark:bg-blue-700">
+                <div className="px-4 py-3 max-w-2xl rounded-2xl bg-primary">
                   <ChatMessage content={message.content} role="user" />
                 </div>
               ) : (
-                <Card className="px-5 py-4 max-w-2xl">
+                <Card className="nm-raised border-0 px-5 py-4 max-w-2xl">
                   <ChatMessage content={message.content} role="assistant" />
                 </Card>
               )}
 
               {message.role === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-zinc-600 dark:bg-zinc-500 flex items-center justify-center flex-shrink-0">
-                  <User className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                  <User className="w-5 h-5 text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -320,14 +320,14 @@ export function WorkBuddyChat() {
 
           {isTyping && (
             <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
-                <Bot className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                <Bot className="w-5 h-5 text-primary-foreground" />
               </div>
-              <Card className="px-4 py-3 bg-card border-border">
+              <Card className="nm-raised border-0 px-4 py-3">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </Card>
             </div>
@@ -347,7 +347,7 @@ export function WorkBuddyChat() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Ask about team efficiency, productivity tips, or workflow improvements..."
-              className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-4 pr-14 focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] leading-6 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-4 pr-14 focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] leading-6 text-foreground placeholder:text-muted-foreground"
               rows={1}
               disabled={!conversationId}
             />
@@ -355,7 +355,7 @@ export function WorkBuddyChat() {
               onClick={handleSend}
               disabled={!input.trim() || isTyping || !conversationId}
               size="icon"
-              className="absolute top-1/2 -translate-y-1/2 right-3 h-8 w-8 rounded-lg hover:opacity-90 disabled:opacity-30 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
+              className="absolute top-1/2 -translate-y-1/2 right-3 h-8 w-8 rounded-lg hover:opacity-90 disabled:opacity-30 bg-primary text-primary-foreground"
             >
               <ArrowUp className="w-4 h-4" />
             </Button>

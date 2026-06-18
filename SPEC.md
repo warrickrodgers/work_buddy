@@ -413,3 +413,91 @@ UI for upload management (deferred to a Phase 4b — sidebar already has an "Upl
 - **Multi-step Prisma writes:** use `prisma.$transaction`.
 - **Frontend styling:** Tailwind + neumorphic utilities (`nm-raised`, `nm-inset`, `nm-pressed`) + shadcn primitives in `web-ui/src/components/ui/`. No inline styles. No new component libraries without spec entry.
 - **RAG context vs persona:** persona/tone documents are NEVER ingested into ChromaDB. They live in system prompts only. Mixing them caused the earlier RAG-poisoning incident.
+
+---
+
+## Design System Rules
+
+### 1. Token Reference
+
+**Neumorphic tokens** (defined in `App.css` `:root` and `.dark`):
+| Token | Purpose |
+|---|---|
+| `--nm-shadow-dark` | The darker shadow in a neumorphic pair |
+| `--nm-shadow-light` | The lighter/highlight shadow |
+| `--nm-distance` | Shadow offset distance |
+| `--nm-blur` | Shadow blur radius |
+
+**Neumorphic utility classes** (apply via Tailwind `@layer utilities`):
+| Class | Use case |
+|---|---|
+| `.nm-raised` | Cards, panels, buttons — surface lifts out of background |
+| `.nm-inset` | Inputs, textareas, concave areas — surface recedes into background |
+| `.nm-pressed` | Active/click state — deeply inset |
+
+**Glass tokens** (defined in `App.css` `:root` and `.dark`):
+| Token | Purpose |
+|---|---|
+| `--glass-tint` | Low-alpha tinted background for glass surfaces |
+| `--glass-tint-strong` | Heavier-alpha variant for more opaque glass |
+| `--glass-border` | Subtle light-edge border line |
+| `--glass-highlight` | Brighter inset top-edge highlight |
+| `--glass-blur` | Backdrop blur radius (18px) |
+
+**Glass utility classes**:
+| Class | Use case |
+|---|---|
+| `.glass` | Light frosted surface (hero badges, informational overlays) |
+| `.glass-strong` | Heavier frosted surface (testimonial cards, chat input chrome) |
+
+**Semantic status tokens** (bare HSL channel values — use as `hsl(var(--status-active))`):
+| Token | Colour intent |
+|---|---|
+| `--status-active` | Green — active/healthy state |
+| `--status-paused` | Amber/orange — paused or in-progress |
+| `--status-completed` | Blue/indigo — successfully completed |
+| `--status-cancelled` | Muted grey — cancelled or inactive |
+| `--status-pending` | Muted grey — not yet started |
+
+---
+
+### 2. Surface Scoping
+
+**Neumorphic (`nm-raised`)** is the default surface treatment for all dashboard app chrome:
+- All `<Card>` components in dashboard pages (Challenges, DashboardHome, Outlines, Uploads, etc.)
+- Add `border-0` alongside `nm-raised` — the neumorphic shadow replaces the default card border
+
+**Glassmorphism (`.glass` / `.glass-strong`)** is approved only on:
+1. `Home.tsx` — marketing/landing page surfaces (hero badge, image overlay panel, testimonial cards)
+2. Chat panel chrome — the header and input wrapper in `ChallengeDetail.tsx` and `WorkBuddyChat.tsx`
+3. Modals and toasts — if a frosted overlay treatment is appropriate
+
+Do **not** use glass on regular dashboard cards, sidebars, or data panels.
+
+---
+
+### 3. Semantic Colour Rule
+
+Never use raw Tailwind palette colours (`bg-green-100`, `text-blue-600`, `bg-zinc-600`, etc.) for status or brand colours. Always go through the CSS variable tokens:
+
+- **Brand action colour** → `bg-primary` / `text-primary` / `text-primary-foreground`
+- **Status colours** → use `hsl(var(--status-active))`, `hsl(var(--status-paused))`, etc., or the `<StatusBadge>` component
+- **Neutral text / surfaces** → `text-muted-foreground` / `bg-muted`
+- **Body text** → `text-foreground`
+
+Decorative colours that are genuinely illustrative (chart series colours, avatar placeholder backgrounds, priority left-border accents) may use Tailwind palette values — but only when there is no semantic token that applies.
+
+---
+
+### 4. StatusBadge and ProgressBar Components
+
+`web-ui/src/components/StatusBadge.tsx` and `web-ui/src/components/ProgressBar.tsx` are the single source of truth for rendering challenge/outline status and progress.
+
+**StatusBadge** — renders a rounded pill badge from a status string. Handles: `ACTIVE`, `PAUSED`, `COMPLETED`, `CANCELLED`, `PENDING`, `DONE`, `PROCESSING`, `DID_NOT_MEET`. Falls back to a muted badge for unknown strings.
+
+**ProgressBar** — renders a full-width progress bar from a 0–100 numeric value. Includes `role="progressbar"` and `aria-value*` attributes for accessibility.
+
+Rules:
+- Never inline status colour conditionals (`challenge.status === 'ACTIVE' ? 'bg-green-100 ...' : ...`). Always use `<StatusBadge status={challenge.status} />`.
+- Never write raw progress bar HTML (`<div className="bg-blue-600 h-2 rounded-full" style={{ width: ... }} />`). Always use `<ProgressBar value={challenge.progress} />`.
+- The local file-scoped `ProgressBar` in `OutlineDetail.tsx` may remain as it uses a 0–1 float range for outline phase progress computation. Use the shared component (`@/components/ProgressBar`) for challenge-level progress (0–100 integer).

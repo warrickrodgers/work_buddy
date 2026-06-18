@@ -55,6 +55,29 @@
       inset -3px -3px 6px var(--nm-shadow-light);
   }
 
+  /* Glass — frosted surface for marketing/chat chrome */
+  .glass {
+    background: var(--glass-tint);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), 0 4px 24px rgba(0,0,0,0.08);
+  }
+
+  .glass-strong {
+    background: var(--glass-tint-strong);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 32px rgba(0,0,0,0.12);
+  }
+
+  /* @supports fallback so glass doesn't break in unsupported browsers */
+  @supports not (backdrop-filter: blur(1px)) {
+    .glass { background: hsl(var(--card)); }
+    .glass-strong { background: hsl(var(--card)); }
+  }
+
   .animate-in {
     animation: fadeIn 0.3s ease-out;
   }
@@ -63,6 +86,11 @@
     from { opacity: 0; }
     to   { opacity: 1; }
   }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse, [class*="animate-"] { animation: none !important; }
 }
 
 /* ── Light mode — soft neumorphic blue-gray ─────────────────────── */
@@ -100,6 +128,20 @@
   --nm-shadow-light: hsl(0 0% 100%);
   --nm-distance: 5px;
   --nm-blur:     12px;
+
+  /* Glass tokens */
+  --glass-tint:        hsl(220 16% 93% / 0.55);
+  --glass-tint-strong: hsl(220 16% 93% / 0.80);
+  --glass-border:      rgba(255,255,255,0.18);
+  --glass-highlight:   rgba(255,255,255,0.30);
+  --glass-blur:        18px;
+
+  /* Semantic status tokens (bare HSL channel values for use with hsl()) */
+  --status-active:    142 71% 45%;
+  --status-paused:    38 92% 50%;
+  --status-completed: 221 83% 53%;
+  --status-cancelled: 220 9% 52%;
+  --status-pending:   220 9% 52%;
 
   /* Sidebar */
   --sidebar:                    hsl(220 16% 89%);
@@ -152,6 +194,20 @@
   --nm-shadow-light: oklch(27% 0.046 264.665);
   --nm-distance: 5px;
   --nm-blur:     10px;
+
+  /* Glass tokens */
+  --glass-tint:        oklch(23.5% 0.037 264.665 / 0.45);
+  --glass-tint-strong: oklch(23.5% 0.037 264.665 / 0.72);
+  --glass-border:      rgba(255,255,255,0.10);
+  --glass-highlight:   rgba(255,255,255,0.14);
+  --glass-blur:        18px;
+
+  /* Semantic status tokens (bare HSL channel values for use with hsl()) */
+  --status-active:    142 71% 45%;
+  --status-paused:    38 92% 50%;
+  --status-completed: 221 83% 53%;
+  --status-cancelled: 220 9% 52%;
+  --status-pending:   220 9% 52%;
 
   /* Sidebar — slightly deeper than page background for recessed feel */
   --sidebar:                    oklch(19.5% 0.032 264.665);

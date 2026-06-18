@@ -19,6 +19,8 @@ import {
   MessageSquare,
   FileText,
 } from 'lucide-react';
+import { StatusBadge } from '@/components/StatusBadge';
+import { ProgressBar } from '@/components/ProgressBar';
 import api from '@/lib/api';
 
 interface Challenge {
@@ -99,13 +101,6 @@ const PRIORITY_BADGE: Record<string, string> = {
   low: 'text-accent-foreground bg-accent',
 };
 
-const STATUS_BADGE: Record<string, string> = {
-  ACTIVE: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950',
-  PAUSED: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950',
-  COMPLETED: 'text-accent-foreground bg-accent',
-  CANCELLED: 'text-muted-foreground bg-muted',
-};
-
 function daysUntil(dateStr: string): number {
   const diff = new Date(dateStr).getTime() - Date.now();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
@@ -174,7 +169,7 @@ export function DashboardHome() {
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card>
+          <Card className="nm-raised border-0">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -190,7 +185,7 @@ export function DashboardHome() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="nm-raised border-0">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -199,14 +194,14 @@ export function DashboardHome() {
                     {isLoading ? '—' : `${avgProgress}%`}
                   </p>
                 </div>
-                <div className="p-3 rounded-full bg-emerald-50 dark:bg-emerald-950">
-                  <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div className="p-3 rounded-full bg-[hsl(var(--status-active)/0.12)]">
+                  <TrendingUp className="w-5 h-5 text-[hsl(var(--status-active))]" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="nm-raised border-0">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -215,14 +210,14 @@ export function DashboardHome() {
                     {isLoading ? '—' : completed.length}
                   </p>
                 </div>
-                <div className="p-3 rounded-full bg-violet-50 dark:bg-violet-950">
-                  <CheckCircle2 className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                <div className="p-3 rounded-full bg-[hsl(var(--status-completed)/0.12)]">
+                  <CheckCircle2 className="w-5 h-5 text-[hsl(var(--status-completed))]" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="nm-raised border-0">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -239,7 +234,7 @@ export function DashboardHome() {
           </Card>
 
           <Card
-            className="cursor-pointer hover:opacity-80 transition-opacity"
+            className="nm-raised border-0 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate('/dashboard/uploads')}
           >
             <CardContent className="pt-6">
@@ -271,9 +266,11 @@ export function DashboardHome() {
             </div>
 
             {isLoading ? (
-              <Card><CardContent className="py-8 text-center text-muted-foreground">Loading...</CardContent></Card>
+              <Card className="nm-raised border-0">
+                <CardContent className="py-8 text-center text-muted-foreground">Loading...</CardContent>
+              </Card>
             ) : active.length === 0 ? (
-              <Card>
+              <Card className="nm-raised border-0">
                 <CardContent className="py-10 text-center">
                   <Target className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                   <p className="text-muted-foreground">No active challenges yet.</p>
@@ -286,16 +283,14 @@ export function DashboardHome() {
               active.slice(0, 5).map(challenge => (
                 <Card
                   key={challenge.id}
-                  className="cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
+                  className="nm-raised border-0 cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
                   onClick={() => navigate(`/dashboard/challenges/${challenge.id}`)}
                 >
                   <CardContent className="pt-5 pb-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0 pr-4">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE[challenge.status] ?? ''}`}>
-                            {challenge.status}
-                          </span>
+                          <StatusBadge status={challenge.status} />
                           <span className="text-xs text-muted-foreground capitalize">
                             {challenge.category.toLowerCase().replace('_', ' ')}
                           </span>
@@ -304,12 +299,7 @@ export function DashboardHome() {
                       </div>
                       <span className="text-sm font-semibold text-foreground shrink-0">{challenge.progress}%</span>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full transition-all"
-                        style={{ width: `${challenge.progress}%` }}
-                      />
-                    </div>
+                    <ProgressBar value={challenge.progress} />
                     {challenge.end_date && (
                       <p className="text-xs text-muted-foreground mt-2">
                         Due {new Date(challenge.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -329,7 +319,7 @@ export function DashboardHome() {
           {/* Upcoming Deadlines */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-foreground">Upcoming Deadlines</h2>
-            <Card>
+            <Card className="nm-raised border-0">
               <CardContent className="pt-5 pb-2">
                 {isLoading ? (
                   <p className="text-muted-foreground text-sm py-4 text-center">Loading...</p>
@@ -380,7 +370,7 @@ export function DashboardHome() {
               {SAMPLE_ACTION_ITEMS.map(item => {
                 const Icon = item.icon;
                 return (
-                  <Card key={item.id} className={`border-l-4 ${PRIORITY_STYLES[item.priority]}`}>
+                  <Card key={item.id} className={`nm-raised border-0 border-l-4 ${PRIORITY_STYLES[item.priority]}`}>
                     <CardContent className="pt-4 pb-3">
                       <div className="flex items-start gap-3">
                         <div className="p-1.5 rounded-md bg-muted shrink-0 mt-0.5">
@@ -411,7 +401,7 @@ export function DashboardHome() {
             </div>
             <div className="space-y-3">
               {SAMPLE_INSIGHTS.map(insight => (
-                <Card key={insight.id}>
+                <Card key={insight.id} className="nm-raised border-0">
                   <CardContent className="pt-4 pb-3">
                     <div className="flex items-start gap-3">
                       <div className="p-1.5 rounded-md bg-muted shrink-0 mt-0.5">
@@ -437,7 +427,7 @@ export function DashboardHome() {
         {/* Quick Links */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-4">
           <Card
-            className="cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
+            className="nm-raised border-0 cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
             onClick={() => navigate('/dashboard/workbuddychats/workbuddychat')}
           >
             <CardContent className="pt-5 pb-4 flex items-center gap-4">
@@ -452,12 +442,12 @@ export function DashboardHome() {
           </Card>
 
           <Card
-            className="cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
+            className="nm-raised border-0 cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
             onClick={() => navigate('/dashboard/challenges/createchallenge')}
           >
             <CardContent className="pt-5 pb-4 flex items-center gap-4">
-              <div className="p-3 rounded-full bg-emerald-50 dark:bg-emerald-950">
-                <Plus className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="p-3 rounded-full bg-[hsl(var(--status-active)/0.12)]">
+                <Plus className="w-5 h-5 text-[hsl(var(--status-active))]" />
               </div>
               <div>
                 <p className="font-medium text-foreground">New challenge</p>
@@ -467,12 +457,12 @@ export function DashboardHome() {
           </Card>
 
           <Card
-            className="cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
+            className="nm-raised border-0 cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all"
             onClick={() => navigate('/dashboard/uploads/new-upload')}
           >
             <CardContent className="pt-5 pb-4 flex items-center gap-4">
-              <div className="p-3 rounded-full bg-violet-50 dark:bg-violet-950">
-                <Zap className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <div className="p-3 rounded-full bg-[hsl(var(--status-completed)/0.12)]">
+                <Zap className="w-5 h-5 text-[hsl(var(--status-completed))]" />
               </div>
               <div>
                 <p className="font-medium text-foreground">Upload data</p>

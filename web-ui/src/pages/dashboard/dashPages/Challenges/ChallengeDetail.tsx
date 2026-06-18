@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, MessageCircle, Calendar, Target, TrendingUp, CheckCircle2, ArrowUp, Loader2, AlertTriangle, X } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
 import { ChatMessage, MarkdownContent } from '@/components/ChatMessage';
 import { OutlineCard } from '@/components/OutlineCard';
+import { StatusBadge } from '@/components/StatusBadge';
+import { ProgressBar } from '@/components/ProgressBar';
 import api from '@/lib/api';
 
 interface Challenge {
@@ -212,33 +214,22 @@ export function ChallengeDetail() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
 
-          <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4 ${
-            challenge.status === 'ACTIVE' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' :
-            challenge.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' :
-            'bg-muted text-muted-foreground'
-          }`}>
-            {challenge.status}
-          </div>
+          <StatusBadge status={challenge.status} className="mb-4" />
 
           <h1 className="text-2xl font-bold text-foreground mb-2">{challenge.title}</h1>
           <MarkdownContent content={challenge.description} className="text-muted-foreground mb-6" />
 
           {/* Progress */}
-          <Card className="mb-6">
+          <Card className="nm-raised border-0 mb-6">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Progress</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl font-bold">{challenge.progress}%</span>
-                <TrendingUp className="w-5 h-5 text-green-600" />
+                <TrendingUp className="w-5 h-5 text-[hsl(var(--status-active))]" />
               </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div
-                  className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all"
-                  style={{ width: `${challenge.progress}%` }}
-                />
-              </div>
+              <ProgressBar value={challenge.progress} />
             </CardContent>
           </Card>
 
@@ -286,11 +277,11 @@ export function ChallengeDetail() {
 
       {/* Right Panel - Chat */}
       <div className="flex-1 flex flex-col">
-        {/* Chat Header */}
-        <div className="border-b border-border bg-background p-4">
+        {/* Chat Header — glass surface */}
+        <div className="glass border-0 border-b border-border p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <MessageCircle className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
               <h2 className="font-semibold text-foreground">Coaching Session</h2>
@@ -315,24 +306,24 @@ export function ChallengeDetail() {
               >
                 <div className={`flex gap-3 w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {message.role === 'assistant' && (
-                    <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
-                      <MessageCircle className="w-5 h-5 text-white" />
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                      <MessageCircle className="w-5 h-5 text-primary-foreground" />
                     </div>
                   )}
 
                   {message.role === 'user' ? (
-                    <div className="px-4 py-3 max-w-2xl rounded-2xl bg-blue-600 dark:bg-blue-700">
+                    <div className="px-4 py-3 max-w-2xl rounded-2xl bg-primary">
                       <ChatMessage content={message.content} role="user" />
                     </div>
                   ) : (
-                    <Card className="px-5 py-4 max-w-2xl">
+                    <Card className="nm-raised border-0 px-5 py-4 max-w-2xl">
                       <ChatMessage content={message.content} role="assistant" />
                     </Card>
                   )}
 
                   {message.role === 'user' && (
-                    <div className="w-8 h-8 rounded-full bg-zinc-600 dark:bg-zinc-500 flex items-center justify-center flex-shrink-0">
-                      <Target className="w-5 h-5 text-white" />
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                      <Target className="w-5 h-5 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -354,10 +345,10 @@ export function ChallengeDetail() {
 
           {isSending && (
             <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
-                <MessageCircle className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                <MessageCircle className="w-5 h-5 text-primary-foreground" />
               </div>
-              <Card className="px-4 py-3 bg-card border-border">
+              <Card className="nm-raised border-0 px-4 py-3">
                 <div className="flex gap-1">
                   <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -387,8 +378,8 @@ export function ChallengeDetail() {
           </div>
         )}
 
-        {/* Input */}
-        <div className="border-t border-border bg-background p-4">
+        {/* Input — glass surface */}
+        <div className="glass border-0 border-t border-border p-4">
           <div className="relative rounded-3xl border border-border bg-background shadow-sm">
             <Textarea
               value={input}

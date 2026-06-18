@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Layers, ArrowRight, CompassIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/StatusBadge';
 import { useAuth } from '@/context/AuthContext';
 import { challengeApi } from '@/lib/api';
 import api from '@/lib/api';
@@ -77,15 +78,7 @@ function OutlineRow({ outline, challengeId }: { outline: OutlineSummary; challen
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           <h3 className="font-semibold text-foreground text-sm truncate">{outline.title}</h3>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
-            outline.status === 'ACTIVE'
-              ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
-              : outline.status === 'COMPLETED'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400'
-                : 'bg-muted text-muted-foreground'
-          }`}>
-            {outline.status}
-          </span>
+          <StatusBadge status={outline.status} className="flex-shrink-0" />
         </div>
 
         <div className="flex items-center gap-3 mb-2">

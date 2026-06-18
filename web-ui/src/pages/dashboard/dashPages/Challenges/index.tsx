@@ -3,6 +3,8 @@ import { useAuth } from '../../../../context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, MessageCircle, Calendar, Target } from 'lucide-react';
+import { StatusBadge } from '@/components/StatusBadge';
+import { ProgressBar } from '@/components/ProgressBar';
 import api from '@/lib/api';
 
 interface Challenge {
@@ -76,7 +78,7 @@ export function ChallengeDashboard() {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card>
+          <Card className="nm-raised border-0">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
             </CardHeader>
@@ -86,7 +88,7 @@ export function ChallengeDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="nm-raised border-0">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
             </CardHeader>
@@ -96,7 +98,7 @@ export function ChallengeDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="nm-raised border-0">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">Avg Progress</CardTitle>
             </CardHeader>
@@ -112,7 +114,7 @@ export function ChallengeDashboard() {
 
         {/* Challenges Grid */}
         {challenges.length === 0 ? (
-          <Card className="p-12 text-center">
+          <Card className="nm-raised border-0 p-12 text-center">
             <Target className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold text-foreground mb-2">No Challenges Yet</h3>
             <p className="text-muted-foreground mb-6">Create your first challenge to start your growth journey</p>
@@ -126,18 +128,12 @@ export function ChallengeDashboard() {
             {challenges.map((challenge) => (
               <Card
                 key={challenge.id}
-                className="hover:brightness-95 dark:hover:brightness-110 transition-all cursor-pointer"
+                className="nm-raised border-0 hover:brightness-95 dark:hover:brightness-110 transition-all cursor-pointer"
                 onClick={() => handleViewChallenge(challenge.id)}
               >
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
-                    <div className={`px-2 py-1 rounded text-xs font-semibold ${
-                      challenge.status === 'ACTIVE' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' :
-                      challenge.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' :
-                      'bg-muted text-muted-foreground'
-                    }`}>
-                      {challenge.status}
-                    </div>
+                    <StatusBadge status={challenge.status} />
                     <div className="text-sm text-muted-foreground">{challenge.category}</div>
                   </div>
                   <CardTitle className="text-lg">{challenge.title}</CardTitle>
@@ -152,12 +148,7 @@ export function ChallengeDashboard() {
                       <span className="text-muted-foreground">Progress</span>
                       <span className="font-semibold">{challenge.progress}%</span>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all"
-                        style={{ width: `${challenge.progress}%` }}
-                      />
-                    </div>
+                    <ProgressBar value={challenge.progress} />
                   </div>
 
                   {/* Dates */}
