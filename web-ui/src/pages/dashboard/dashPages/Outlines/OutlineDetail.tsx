@@ -7,6 +7,7 @@ import {
   ArrowLeft, BookOpen, ChevronDown, CheckSquare, Square,
   Flame, Calendar, Loader2, Edit2, Check, Layers
 } from 'lucide-react';
+import { StatusBadge } from '@/components/StatusBadge';
 import api from '@/lib/api';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -353,13 +354,7 @@ export function OutlineDetail() {
             <BookOpen className="w-5 h-5 text-primary flex-shrink-0" />
             <h1 className="font-bold text-foreground text-lg truncate">{outline.title}</h1>
           </div>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${
-            outline.status === 'ACTIVE'
-              ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
-              : 'bg-muted text-muted-foreground'
-          }`}>
-            {outline.status}
-          </span>
+          <StatusBadge status={outline.status} className="flex-shrink-0" />
         </div>
 
         {/* Why callout */}

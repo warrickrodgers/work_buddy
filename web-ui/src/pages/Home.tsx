@@ -15,10 +15,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const PRIMARY = 'oklch(21% 0.034 264.665)';
-const PRIMARY_LIGHT = 'oklch(26% 0.04 264.665)';
-const ACCENT = 'oklch(62% 0.18 245)';
-
 const FEATURES = [
   {
     icon: Target,
@@ -89,14 +85,14 @@ const STATS = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans antialiased">
+    <div className="min-h-screen bg-background text-foreground font-sans antialiased">
 
       {/* ── Nav ─────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10" style={{ backgroundColor: PRIMARY }}>
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[oklch(21%_0.034_264.665)]">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ backgroundColor: ACCENT }}>
-              <Zap className="w-4 h-4 text-white" />
+            <div className="w-7 h-7 rounded-md flex items-center justify-center bg-primary">
+              <Zap className="w-4 h-4 text-primary-foreground" />
             </div>
             <span className="text-white font-semibold text-lg tracking-tight">WorkBuddy</span>
           </div>
@@ -112,7 +108,7 @@ export default function Home() {
               </Button>
             </Link>
             <Link to="/signup">
-              <Button size="sm" className="text-white font-medium" style={{ backgroundColor: ACCENT }}>
+              <Button size="sm" className="bg-primary text-primary-foreground font-medium">
                 Get started free
               </Button>
             </Link>
@@ -121,23 +117,20 @@ export default function Home() {
       </nav>
 
       {/* ── Hero ────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center pt-16 overflow-hidden" style={{ backgroundColor: PRIMARY }}>
+      <section className="relative min-h-screen flex flex-col justify-center pt-16 overflow-hidden bg-[oklch(21%_0.034_264.665)]">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{ background: `radial-gradient(ellipse 80% 60% at 50% 0%, oklch(35% 0.08 245 / 0.4), transparent 70%)` }}
         />
         <div className="relative max-w-7xl mx-auto px-6 py-32 grid lg:grid-cols-2 gap-16 items-center">
           <div>
-            <div
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-1.5 text-xs text-white/60 mb-8 backdrop-blur-sm"
-              style={{ backgroundColor: 'oklch(30% 0.05 264 / 0.5)' }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: ACCENT }} />
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-1.5 text-xs text-white/60 mb-8 glass">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary motion-safe:animate-pulse" />
               AI-powered team leadership — now available
             </div>
             <h1 className="text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-[1.08] tracking-tight mb-8">
               Great teams don't{' '}
-              <span className="italic" style={{ color: ACCENT }}>happen.</span>
+              <span className="italic text-primary">happen.</span>
               <br />
               They're built.
             </h1>
@@ -147,7 +140,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/signup">
-                <Button size="lg" className="w-full sm:w-auto text-white font-semibold px-8 gap-2" style={{ backgroundColor: ACCENT }}>
+                <Button size="lg" className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold px-8 gap-2">
                   Start building your team
                   <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -176,12 +169,12 @@ export default function Home() {
               className="rounded-2xl w-full object-cover aspect-[4/3] opacity-80"
               style={{ boxShadow: `0 0 80px oklch(40% 0.12 245 / 0.25)` }}
             />
-            <div className="absolute inset-0 rounded-2xl" style={{ background: `linear-gradient(to top, ${PRIMARY} 0%, transparent 40%)` }} />
+            <div className="absolute inset-0 rounded-2xl" style={{ background: `linear-gradient(to top, oklch(21% 0.034 264.665) 0%, transparent 40%)` }} />
           </div>
         </div>
 
         {/* Stats bar */}
-        <div className="relative border-t border-white/10" style={{ backgroundColor: PRIMARY_LIGHT }}>
+        <div className="relative border-t border-white/10 bg-[oklch(26%_0.04_264.665)]">
           <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-0 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
             {STATS.map(s => (
               <div key={s.value} className="sm:px-10 first:pl-0 last:pr-0 flex flex-col gap-1">
@@ -208,7 +201,7 @@ export default function Home() {
             Economic pressure. Remote friction. Shifting expectations. Leaders are being asked to do more with
             less, faster than ever — while keeping their people motivated, aligned, and growing.
           </p>
-          <p className="text-xl font-medium leading-relaxed" style={{ color: ACCENT }}>
+          <p className="text-xl font-medium leading-relaxed text-[oklch(62%_0.18_245)]">
             WorkBuddy exists because we believe every team deserves a leader who has the clarity, tools, and
             support to bring out their best.
           </p>
@@ -229,8 +222,8 @@ export default function Home() {
               const Icon = f.icon;
               return (
                 <div key={f.title} className="bg-white rounded-2xl p-8 border border-gray-100 hover:shadow-lg transition-shadow">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-6" style={{ backgroundColor: `oklch(62% 0.18 245 / 0.1)` }}>
-                    <Icon className="w-5 h-5" style={{ color: ACCENT }} />
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-6 bg-[oklch(62%_0.18_245_/_0.10)]">
+                    <Icon className="w-5 h-5 text-primary" />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-3 text-lg">{f.title}</h3>
                   <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
@@ -253,7 +246,7 @@ export default function Home() {
               {STEPS.map((s, i) => (
                 <div key={s.num} className="flex gap-8">
                   <div className="shrink-0 flex flex-col items-center">
-                    <span className="text-xs font-bold w-9 h-9 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: PRIMARY }}>
+                    <span className="text-xs font-bold w-9 h-9 rounded-full flex items-center justify-center text-white bg-[oklch(21%_0.034_264.665)]">
                       {s.num}
                     </span>
                     {i < STEPS.length - 1 && <div className="w-px flex-1 mt-3 bg-gray-100 min-h-[48px]" />}
@@ -267,7 +260,7 @@ export default function Home() {
             </div>
             <div className="mt-12">
               <Link to="/signup">
-                <Button size="lg" className="text-white gap-2" style={{ backgroundColor: PRIMARY }}>
+                <Button size="lg" className="bg-[oklch(21%_0.034_264.665)] text-white gap-2">
                   Start your first challenge
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -281,9 +274,12 @@ export default function Home() {
               alt="Modern office environment"
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, transparent 60%)`, opacity: 0.6 }} />
+            <div
+              className="absolute inset-0"
+              style={{ background: `linear-gradient(135deg, oklch(21% 0.034 264.665) 0%, transparent 60%)`, opacity: 0.6 }}
+            />
             <div className="absolute bottom-0 left-0 right-0 p-10">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-6">
+              <div className="glass rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-3">
                   <TrendingUp className="w-5 h-5 text-white" />
                   <span className="text-white font-semibold text-sm">Team progress this week</span>
@@ -299,7 +295,7 @@ export default function Home() {
       </section>
 
       {/* ── Testimonials ────────────────────────────────────────────── */}
-      <section className="py-32" style={{ backgroundColor: PRIMARY }}>
+      <section className="py-32 bg-[oklch(21%_0.034_264.665)]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
             <p className="text-sm font-semibold tracking-widest uppercase text-white/40 mb-4">From the field</p>
@@ -309,7 +305,7 @@ export default function Home() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {TESTIMONIALS.map(t => (
-              <div key={t.name} className="rounded-2xl p-8 border border-white/10" style={{ backgroundColor: PRIMARY_LIGHT }}>
+              <div key={t.name} className="rounded-2xl p-8 glass-strong">
                 <Quote className="w-8 h-8 text-white/20 mb-6" />
                 <p className="text-white/80 leading-relaxed mb-8 text-base">{t.quote}</p>
                 <div className="flex items-center gap-4">
@@ -328,8 +324,8 @@ export default function Home() {
       {/* ── CTA ─────────────────────────────────────────────────────── */}
       <section className="py-32 bg-white">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-8" style={{ backgroundColor: `oklch(62% 0.18 245 / 0.1)` }}>
-            <ShieldCheck className="w-7 h-7" style={{ color: ACCENT }} />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-8 bg-[oklch(62%_0.18_245_/_0.10)]">
+            <ShieldCheck className="w-7 h-7 text-primary" />
           </div>
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight mb-6">
             Your team's best chapter starts with one decision.
@@ -340,7 +336,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup">
-              <Button size="lg" className="text-white font-semibold px-10 gap-2" style={{ backgroundColor: PRIMARY }}>
+              <Button size="lg" className="bg-[oklch(21%_0.034_264.665)] text-white font-semibold px-10 gap-2">
                 Get started free
                 <ArrowRight className="w-4 h-4" />
               </Button>
@@ -355,11 +351,11 @@ export default function Home() {
       </section>
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
-      <footer className="border-t border-white/10" style={{ backgroundColor: PRIMARY }}>
+      <footer className="border-t border-white/10 bg-[oklch(21%_0.034_264.665)]">
         <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: ACCENT }}>
-              <Zap className="w-3.5 h-3.5 text-white" />
+            <div className="w-6 h-6 rounded-md flex items-center justify-center bg-primary">
+              <Zap className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
             <span className="text-white font-semibold tracking-tight">WorkBuddy</span>
           </div>
