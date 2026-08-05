@@ -190,7 +190,7 @@ export default function Home() {
       <section id="why" className="py-32 bg-white">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <p className="text-sm font-semibold tracking-widest uppercase text-gray-400 mb-6">Our Purpose</p>
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight mb-8">
+          <h2 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-8">
             Most teams don't fail because of a lack of talent.
           </h2>
           <p className="text-xl text-gray-500 leading-relaxed mb-6">
@@ -213,7 +213,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="max-w-2xl mb-20">
             <p className="text-sm font-semibold tracking-widest uppercase text-gray-400 mb-4">What we give you</p>
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
+            <h2 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight">
               Everything a leader needs. Nothing they don't.
             </h2>
           </div>
@@ -225,7 +225,7 @@ export default function Home() {
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-6 bg-[oklch(62%_0.18_245_/_0.10)]">
                     <Icon className="w-5 h-5 text-primary" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-3 text-lg">{f.title}</h3>
+                  <h3 className="font-semibold text-foreground mb-3 text-lg">{f.title}</h3>
                   <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
                 </div>
               );
@@ -239,7 +239,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center">
           <div>
             <p className="text-sm font-semibold tracking-widest uppercase text-gray-400 mb-4">How it works</p>
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight mb-16">
+            <h2 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-16">
               A practice, not a product.
             </h2>
             <div className="space-y-12">
@@ -252,7 +252,7 @@ export default function Home() {
                     {i < STEPS.length - 1 && <div className="w-px flex-1 mt-3 bg-gray-100 min-h-[48px]" />}
                   </div>
                   <div className="pt-1 pb-4">
-                    <h3 className="font-semibold text-gray-900 text-xl mb-3">{s.title}</h3>
+                    <h3 className="font-semibold text-foreground text-xl mb-3">{s.title}</h3>
                     <p className="text-gray-500 leading-relaxed">{s.desc}</p>
                   </div>
                 </div>
@@ -327,7 +327,7 @@ export default function Home() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-8 bg-[oklch(62%_0.18_245_/_0.10)]">
             <ShieldCheck className="w-7 h-7 text-primary" />
           </div>
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight mb-6">
+          <h2 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-6">
             Your team's best chapter starts with one decision.
           </h2>
           <p className="text-xl text-gray-500 leading-relaxed mb-10 max-w-2xl mx-auto">
