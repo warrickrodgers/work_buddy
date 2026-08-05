@@ -44,7 +44,7 @@ class IntentClassifier {
     if (this.ready) return;
 
     logger.info('IntentClassifier: embedding exemplar phrases...');
-    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004' });
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001' });
 
     this.exemplarEmbeddings = await Promise.all(
       EXEMPLAR_PHRASES.map(async (phrase) => {
@@ -61,7 +61,7 @@ class IntentClassifier {
     if (!this.ready) await this.initialize();
 
     try {
-      const model = genAI.getGenerativeModel({ model: process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004' });
+      const model = genAI.getGenerativeModel({ model: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001' });
       const result = await model.embedContent(userMessage);
       const msgEmbedding = result.embedding.values;
 

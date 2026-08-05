@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import {
   Target,
   TrendingUp,
+  TrendingDown,
   CheckCircle2,
   Clock,
   Calendar,
@@ -13,9 +14,6 @@ import {
   Plus,
   Zap,
   Lightbulb,
-  AlertCircle,
-  Users,
-  BarChart3,
   MessageSquare,
   FileText,
 } from 'lucide-react';
@@ -34,60 +32,29 @@ interface Challenge {
   end_date?: string;
 }
 
-const SAMPLE_ACTION_ITEMS = [
-  {
-    id: 1,
-    title: 'Schedule weekly team retrospective',
-    description: 'Set up a recurring 30-min session to review progress and blockers.',
-    priority: 'high',
-    icon: Users,
-  },
-  {
-    id: 2,
-    title: 'Review communication challenge metrics',
-    description: 'Two challenges are past the halfway mark — check if success criteria still apply.',
-    priority: 'medium',
-    icon: BarChart3,
-  },
-  {
-    id: 3,
-    title: 'Log this week\'s coaching notes',
-    description: 'Your AI coach is waiting for your latest observations to refine guidance.',
-    priority: 'medium',
-    icon: MessageSquare,
-  },
-  {
-    id: 4,
-    title: 'Update end dates for paused challenges',
-    description: 'Two challenges have no end date set. Adding one helps track urgency.',
-    priority: 'low',
-    icon: Calendar,
-  },
-];
+interface ActionItem {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  source_type: 'challenge' | 'system';
+  source_id?: number;
+}
 
-const SAMPLE_INSIGHTS = [
-  {
-    id: 1,
-    title: 'Communication trends up',
-    body: 'Team communication scores have improved 23% over the past 4 weeks based on check-in sentiment.',
-    tag: 'Positive trend',
-    tagColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950',
-  },
-  {
-    id: 2,
-    title: 'Peak productivity window',
-    body: 'Most task completions happen Tuesday–Wednesday mornings. Consider protecting this time from meetings.',
-    tag: 'Scheduling insight',
-    tagColor: 'text-accent-foreground bg-accent',
-  },
-  {
-    id: 3,
-    title: 'Habit challenges outperform',
-    body: 'Habit-type challenges have a 40% higher completion rate than skill-based ones in your history.',
-    tag: 'Pattern detected',
-    tagColor: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950',
-  },
-];
+const RULE_ICONS: Record<string, React.ElementType> = {
+  overdue:       Clock,
+  'due-soon':    Clock,
+  'stale-checkin': MessageSquare,
+  'no-end-date': Calendar,
+  behind:        TrendingDown,
+  'no-documents': FileText,
+};
+
+function iconForItem(item: ActionItem): React.ElementType {
+  const prefix = item.id.replace(/-\d+$/, '');
+  return RULE_ICONS[prefix] ?? Target;
+}
+
 
 const PRIORITY_STYLES: Record<string, string> = {
   high: 'border-l-red-500',
@@ -116,24 +83,31 @@ function greeting(name: string): string {
 export function DashboardHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [isLoading, setIsLoading]   = useState(true);
-  const [docCount, setDocCount]     = useState<number | null>(null);
+  const [challenges,   setChallenges]   = useState<Challenge[]>([]);
+  const [isLoading,    setIsLoading]    = useState(true);
+  const [docCount,     setDocCount]     = useState<number | null>(null);
+  const [actionItems,  setActionItems]  = useState<ActionItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.id) {
-      api.get(`/challenges/user/${user.id}`)
-        .then(res => setChallenges(res.data))
-        .catch(err => console.error('Failed to load challenges:', err))
-        .finally(() => setIsLoading(false));
+    if (!user?.id) return;
 
-      api.get('/documents')
-        .then(res => {
-          const docs: any[] = res.data.documents ?? [];
-          setDocCount(docs.filter(d => d.status === 'COMPLETE').length);
-        })
-        .catch(() => setDocCount(0));
-    }
+    api.get(`/challenges/user/${user.id}`)
+      .then(res => setChallenges(res.data))
+      .catch(err => console.error('Failed to load challenges:', err))
+      .finally(() => setIsLoading(false));
+
+    api.get('/documents')
+      .then(res => {
+        const docs: any[] = res.data.documents ?? [];
+        setDocCount(docs.filter(d => d.status === 'COMPLETE').length);
+      })
+      .catch(() => setDocCount(0));
+
+    api.get('/dashboard/action-items')
+      .then(res => setActionItems(res.data.action_items ?? []))
+      .catch(() => setActionItems([]))
+      .finally(() => setItemsLoading(false));
   }, [user?.id]);
 
   const active = challenges.filter(c => c.status === 'ACTIVE');
@@ -362,65 +336,78 @@ export function DashboardHome() {
 
           {/* Action Items */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-foreground">Action Items</h2>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Sample</span>
-            </div>
+            <h2 className="text-lg font-semibold text-foreground">Action Items</h2>
             <div className="space-y-3">
-              {SAMPLE_ACTION_ITEMS.map(item => {
-                const Icon = item.icon;
-                return (
-                  <Card key={item.id} className={`nm-raised border-0 border-l-4 ${PRIORITY_STYLES[item.priority]}`}>
+              {itemsLoading ? (
+                [1, 2, 3].map(n => (
+                  <Card key={n} className="nm-raised border-0">
                     <CardContent className="pt-4 pb-3">
-                      <div className="flex items-start gap-3">
-                        <div className="p-1.5 rounded-md bg-muted shrink-0 mt-0.5">
-                          <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <p className="text-sm font-medium text-foreground">{item.title}</p>
-                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium capitalize ${PRIORITY_BADGE[item.priority]}`}>
-                              {item.priority}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground">{item.description}</p>
+                      <div className="flex items-start gap-3 animate-pulse">
+                        <div className="size-7 rounded-md bg-muted shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3 bg-muted rounded w-3/4" />
+                          <div className="h-3 bg-muted rounded w-full" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                );
-              })}
+                ))
+              ) : actionItems.length === 0 ? (
+                <Card className="nm-raised border-0">
+                  <CardContent className="py-10 text-center">
+                    <CheckCircle2 className="w-8 h-8 mx-auto text-[hsl(var(--status-active))] mb-2" />
+                    <p className="text-sm text-muted-foreground">No action items right now — you're on track.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                actionItems.map(item => {
+                  const Icon = iconForItem(item);
+                  const isClickable = item.source_type === 'challenge' && item.source_id;
+                  return (
+                    <Card
+                      key={item.id}
+                      className={`nm-raised border-0 border-l-4 ${PRIORITY_STYLES[item.priority]} ${isClickable ? 'cursor-pointer hover:brightness-95 dark:hover:brightness-110 transition-all' : ''}`}
+                      onClick={isClickable ? () => navigate(`/dashboard/challenges/${item.source_id}`) : undefined}
+                    >
+                      <CardContent className="pt-4 pb-3">
+                        <div className="flex items-start gap-3">
+                          <div className="p-1.5 rounded-md bg-muted shrink-0 mt-0.5">
+                            <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <p className="text-sm font-medium text-foreground">{item.title}</p>
+                              <span className={`text-xs px-1.5 py-0.5 rounded font-medium capitalize ${PRIORITY_BADGE[item.priority]}`}>
+                                {item.priority}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
             </div>
           </div>
 
           {/* Insights */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-foreground">Insights</h2>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Sample</span>
-            </div>
-            <div className="space-y-3">
-              {SAMPLE_INSIGHTS.map(insight => (
-                <Card key={insight.id} className="nm-raised border-0">
-                  <CardContent className="pt-4 pb-3">
-                    <div className="flex items-start gap-3">
-                      <div className="p-1.5 rounded-md bg-muted shrink-0 mt-0.5">
-                        <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-medium text-foreground">{insight.title}</p>
-                          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${insight.tagColor}`}>
-                            {insight.tag}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{insight.body}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <h2 className="text-lg font-semibold text-foreground">Insights</h2>
+            <Card className="nm-raised border-0">
+              <CardContent className="py-10 text-center flex flex-col items-center gap-3">
+                <div className="p-3 rounded-full bg-amber-50 dark:bg-amber-950">
+                  <Lightbulb className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Weekly insights coming in Phase 6B</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Simon will analyse your challenge progress and conversations to surface patterns and coaching nudges.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 

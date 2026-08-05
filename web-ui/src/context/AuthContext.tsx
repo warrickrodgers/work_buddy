@@ -1,10 +1,15 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-interface User {
+export interface User {
   id: number;
   email: string;
   first_name: string;
   last_name: string;
+  job_title: string;
+  company: string;
+  role: 'individual' | 'member' | 'admin';
+  onboarding_complete: boolean;
+  organisation_id: number;
 }
 
 interface AuthContextType {
@@ -12,6 +17,7 @@ interface AuthContextType {
   token: string | null;
   login: (token: string, user: User) => void;
   logout: () => void;
+  updateUser: (partial: Partial<User>) => void;
   isAuthenticated: boolean;
 }
 
@@ -22,10 +28,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load from localStorage on mount
     const savedToken = localStorage.getItem('authToken');
     const savedUser = localStorage.getItem('user');
-    
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
@@ -46,14 +50,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('user');
   };
 
+  // Allows onboarding and org steps to patch the stored user without a full re-login
+  const updateUser = (partial: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...partial };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      token, 
-      login, 
-      logout, 
-      isAuthenticated: !!token 
-    }}>
+    <AuthContext.Provider
+      value={{ user, token, login, logout, updateUser, isAuthenticated: !!token }}
+    >
       {children}
     </AuthContext.Provider>
   );

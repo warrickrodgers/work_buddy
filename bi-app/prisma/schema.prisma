@@ -9,12 +9,15 @@ datasource db {
 }
 
 model Organisation {
-  id          Int                  @id @default(autoincrement())
-  name        String
-  created_at  DateTime             @default(now())
-  updated_at  DateTime             @updatedAt
-  users       User[]
-  documents   IngestionDocument[]
+  id           Int                 @id @default(autoincrement())
+  name         String
+  is_personal  Boolean             @default(false)
+  invite_token String?             @unique
+  email_domain String?
+  created_at   DateTime            @default(now())
+  updated_at   DateTime            @updatedAt
+  users        User[]
+  documents    IngestionDocument[]
 }
 
 model User {
@@ -26,10 +29,12 @@ model User {
     last_login      DateTime           @default(now())
     job_title       String
     company         String
-    password_hash   String
-    auth_method     String
-    organisation    Organisation       @relation(fields: [organisation_id], references: [id])
-    organisation_id Int
+    password_hash       String
+    auth_method         String
+    role                String             @default("individual")
+    onboarding_complete Boolean            @default(true)
+    organisation        Organisation       @relation(fields: [organisation_id], references: [id])
+    organisation_id     Int
     problem_request ProblemRequest[]
     insight_feedback InsightFeedback[]
     conversations   Conversation[]

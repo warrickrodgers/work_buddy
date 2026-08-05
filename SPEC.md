@@ -383,6 +383,205 @@ UI for upload management (deferred to a Phase 4b — sidebar already has an "Upl
 
 ---
 
+## Phase 5 — Organisation Workflow 🔄 In Progress
+
+**Purpose:** Surface the org infrastructure built in Phase 5 (schema + backend) as real, usable product. Users should be able to manage their org, see their team, share an invite token, and have the app reflect whether they're an individual or part of an org throughout the UI.
+
+### What was pre-built (not yet surfaced in UI)
+- `Organisation`: `is_personal`, `invite_token`, `email_domain` fields
+- `User`: `role` (`individual | member | admin`), `onboarding_complete`
+- Backend: `/api/org/create`, `/api/org/join`, `/api/org/skip`, `/api/org/me`, `/api/org/regenerate-token`
+- Backend: `POST /api/auth/mock-sso` (email domain → auto-join)
+- Frontend: `Onboarding.tsx` (post-signup three-card flow), updated `AuthContext`, `PrivateRoute` with `allowIncomplete`
+
+### Source-of-truth rule: role vs is_personal
+
+`User.role` is the **single source of truth** for all UI gating and access control checks. Never branch on `Organisation.is_personal` in controllers or components — it is an internal implementation detail used only by `orgController` when deciding whether to delete a shadow org during create/join.
+
+The enforced invariant is:
+- `role === 'individual'` ↔ user's org has `is_personal === true`
+- `role === 'admin' | 'member'` ↔ user's org has `is_personal === false`
+
+`orgController` is responsible for maintaining this invariant at write time. If they diverge, `role` wins.
+
+### Document orphan behaviour on org transition
+
+When a user who uploaded documents as an individual subsequently joins or creates a real org, their `organisation_id` changes but their `IngestionDocument` rows retain the old (shadow) `organisation_id`. The RAG pipeline filters by the user's **current** `organisation_id`, so those documents become invisible to retrieval.
+
+The shadow org is **not deleted** in this case (the FK constraint on `IngestionDocument` prevents it anyway if `oldOrgDocCount > 0`). It becomes an ownerless org record holding orphaned documents.
+
+**This is explicitly out of scope for Phase 5.** The spec calls it out here so it is not silently skipped:
+- Document migration on org transition (re-tagging Postgres rows + ChromaDB chunk metadata) is a future concern.
+- The consequence to communicate to users: documents uploaded on a personal workspace will not carry over if you later join an org. Re-upload after joining.
+
+### Phase 5.1 — User Profile API + General Settings tab
+
+**New backend endpoints (`bi-app`):**
+```
+GET   /api/users/me        — return full profile (id, email, names, job_title, company, role, org)
+PATCH /api/users/me        — update first_name, last_name, job_title, company
+```
+
+**General tab** (currently `<PlaceholderTab title="General" />`):
+- Profile section: editable first name, last name, job title, company → `PATCH /api/users/me`
+- Workspace section (read-only): org name + role badge (`Admin` / `Member` / `Personal Workspace`)
+- Save button; inline success/error feedback
+
+### Phase 5.2 — Team Settings tab
+
+Fill the existing `<PlaceholderTab title="Team" />` with role-gated content.
+
+**Admin view:**
+- Org name (editable inline) → `PATCH /api/org/me`
+- Email domain field (for mock SSO) → `PATCH /api/org/me`; validated as a bare domain (no `@`, no protocol, no path — e.g. `acme.com` is valid, `@acme.com` and `https://acme.com` are not). No blocklist of public domains (gmail.com, etc.) enforced server-side — this is a dev/mock-only field and the responsibility sits with the admin. A helper note in the UI ("Used for mock SSO only") is sufficient.
+- Invite token display: monospace token + copy button + "Regenerate" button → `POST /api/org/regenerate-token`
+- Member list: name, email, role pill, joined date — fetched from `GET /api/org/members`
+
+**Member view:**
+- Org name (read-only)
+- Member list (same as admin, without management controls)
+
+**Individual view:**
+- "You're using a personal workspace." callout
+- CTA cards: "Create an Organisation" → `/onboarding` (step: create) and "Join an Organisation" → `/onboarding` (step: join)
+
+### Phase 5.3 — New backend endpoints
+
+`GET /api/users/me` and `PATCH /api/users/me` are defined and built in Phase 5.1. The additional endpoints needed are:
+
+```
+PATCH  /api/org/me          — update org name, email_domain (admin only)
+GET    /api/org/members     — list all users in caller's org (admin + member)
+```
+
+`PATCH /api/org/me` rejects non-admins with 403. `email_domain` validated server-side: must match `/^[a-z0-9.-]+\.[a-z]{2,}$/i` (bare domain only, no `@` or protocol). `GET /api/org/members` returns `[{ id, email, first_name, last_name, role, created_at }]` filtered to `organisation_id` of the calling user. Personal workspace members (individual users) only ever see themselves.
+
+### Phase 5.4 — Sidebar org context
+
+In `AppSidebar`, below (or replacing) the user name footer:
+- Show org name if `role !== 'individual'`, otherwise show "Personal Workspace"
+- Show a role chip: `Admin` (primary), `Member` (muted), `Individual` (muted)
+
+### Phase 5.5 — Onboarding re-entry
+
+Individual users who want to upgrade to an org can reach the onboarding flow from the Team settings tab. The Onboarding page must detect the user's current state:
+- If `onboarding_complete === true` and `role === 'individual'`: show only "Create Org" and "Join Org" options (no "Continue as Individual" — they're already individual)
+- If `onboarding_complete === false`: show all three options (normal first-run flow)
+
+### Acceptance Criteria
+
+- General tab: user can edit profile fields; changes reflect immediately in UI and persist on reload
+- Team tab (admin): invite token visible + copyable + regeneratable; org name editable; member list populated
+- Team tab (member): read-only member list; org name visible
+- Team tab (individual): upgrade prompt with working CTAs back to onboarding
+- Sidebar: org name or "Personal Workspace" visible; role chip accurate
+- Onboarding re-entry: individual users going back see only create/join options
+- All org write endpoints reject non-admins with 403
+- Prisma migration has been run (`add_org_onboarding_fields`)
+
+### Out of Scope
+
+- Removing members from an org
+- Transferring org ownership
+- Multiple orgs per user
+- Real SSO (SAML/OIDC) — mock SSO only
+- Billing or seat limits
+
+---
+
+## Phase 6A — Computed Action Items 🔄 In Progress
+
+**Purpose:** Replace the hardcoded `SAMPLE_ACTION_ITEMS` on the dashboard with real, rules-based action items derived from the user's existing challenges, check-ins, and outlines. No AI or new DB model required — pure computation from data already present.
+
+### Rules
+
+Each rule produces zero or more action items. Items are sorted by priority (`high → medium → low`) before being returned.
+
+| Rule | Trigger condition | Title | Priority |
+|---|---|---|---|
+| **overdue** | `status = ACTIVE` and `end_date < today` | `"{title}" is past its end date` | high |
+| **due-soon** | `status = ACTIVE` and `0 < daysUntil(end_date) ≤ 7` | `"{title}" is due in {n} day(s)` | high |
+| **stale-checkin** | `status = ACTIVE` and no `ChallengeCheckIn` in the past 7 days | `Log your progress on "{title}"` | medium |
+| **no-end-date** | `status = ACTIVE` and `end_date = null` | `Set a deadline for "{title}"` | medium |
+| **behind-schedule** | `status = ACTIVE` and `progress < 25` and more than half the challenge duration has elapsed | `"{title}" may be falling behind` | medium |
+| **no-documents** | `GET /api/documents` returns 0 COMPLETE documents | `Upload org documents to give Simon more context` | low |
+
+Rules are evaluated server-side. A single challenge can produce multiple items (e.g. overdue + stale-checkin). Cap total returned items at **8** — drop lowest-priority items if over the cap.
+
+### API
+
+```
+GET /api/dashboard/action-items
+```
+
+Auth-protected. Returns:
+
+```typescript
+interface ActionItem {
+  id: string;           // deterministic: "{rule}-{source_id}" e.g. "overdue-42"
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  source_type: 'challenge' | 'system';
+  source_id?: number;   // challenge id if applicable — used for navigation
+}
+```
+
+No new Prisma models. Queries existing `Challenge`, `ChallengeCheckIn`, and `IngestionDocument` tables.
+
+### Frontend
+
+- Replace `SAMPLE_ACTION_ITEMS` in `DashboardHome.tsx` with a `useEffect` call to `GET /api/dashboard/action-items`
+- Remove the "Sample" badge; show a skeleton loader while fetching
+- Map `source_type === 'challenge'` items to navigate to `/dashboard/challenges/{source_id}` on click
+- Keep existing priority colour styles (`PRIORITY_STYLES`, `PRIORITY_BADGE`)
+- Empty state: "No action items right now — you're on track." with a `CheckCircle2` icon
+- Icon mapping by rule: overdue/due-soon → `Clock`, stale-checkin → `MessageSquare`, no-end-date → `Calendar`, behind-schedule → `TrendingDown`, no-documents → `FileText`
+
+### Out of Scope for 6A
+- AI-extracted action items from chat messages
+- Persisting action items or marking them complete
+- Push notifications
+
+---
+
+## Phase 6B — AI Insights 📋 Planned
+
+**Purpose:** Replace the hardcoded `SAMPLE_INSIGHTS` with AI-generated weekly coaching summaries driven by the user's real challenge progress, check-in history, and conversation themes.
+
+### Data model
+
+```prisma
+model Insight {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  user         User     @relation(fields: [user_id], references: [id])
+  summary      Json     // array of { title, body, tag, tagColor }
+  generated_at DateTime @default(now())
+  period_start DateTime
+  period_end   DateTime
+}
+```
+
+### Generation trigger
+
+On-demand first — a "Refresh insights" button on the dashboard triggers `POST /api/insights/generate`. The server checks if insights exist from within the past 7 days; if so, returns cached. Otherwise, calls agent-server to generate new ones.
+
+Agent-server receives: challenge summaries, recent check-in notes, average progress delta over the period. Returns a structured array of insight objects matching the existing card format.
+
+### AI settings integration
+
+An "Weekly coaching insights" toggle is added to the AI tab in Settings — when off, the Insights section on the dashboard shows a disabled state with a prompt to turn it on.
+
+### Acceptance criteria (6B, not yet in scope)
+- `Insight` model migrated
+- `POST /api/insights/generate` returns fresh insights or cached if < 7 days old
+- `GET /api/insights/latest` returns the most recent insight set for the user
+- Dashboard Insights section replaced with real data; "Refresh" button visible
+- AI settings toggle gates the feature
+
+---
+
 ## Cross-Cutting Reference
 
 ### Current ChromaDB collections

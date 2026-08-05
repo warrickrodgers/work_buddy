@@ -19,7 +19,10 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   const authHeader = req.headers['authorization'];
   const token = authHeader?.split(' ')[1] || req.cookies?.token;
 
-  if(!token) res.status(401).json({error: 'Unauthorized: token missing'});
+  if (!token) {
+    res.status(401).json({ error: 'Unauthorized: token missing' });
+    return;
+  }
 
   try {
     const payload = jwt.verify(token, JWT_SECRET) as AuthPayload;

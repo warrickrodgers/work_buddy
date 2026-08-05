@@ -2,19 +2,18 @@
 
 import {
   BadgeCheck,
-  Bell,
+  Building2,
   ChevronsUpDown,
   CreditCard,
   LogOut,
   Moon,
   Sparkles,
   Sun,
+  User,
 } from "lucide-react"
-
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
 } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -31,25 +30,35 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { useNavigate } from "react-router-dom";
-import { useTheme } from "@/context/ThemeContext";
+import { useNavigate } from "react-router-dom"
+import { useTheme } from "@/context/ThemeContext"
+import { useAuth } from "@/context/AuthContext"
+import { cn } from "@/lib/utils"
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
-  const { isMobile } = useSidebar();
-  const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  member: 'Member',
+  individual: 'Personal',
+}
+
+export function NavUser({ orgName }: { orgName: string }) {
+  const { isMobile } = useSidebar()
+  const navigate = useNavigate()
+  const { theme, toggleTheme } = useTheme()
+  const { user, logout } = useAuth()
+
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
+    logout()
+    navigate('/login')
   }
+
+  const initials = user
+    ? `${user.first_name?.[0] ?? ''}${user.last_name?.[0] ?? ''}`.toUpperCase() || '?'
+    : '?'
+
+  const fullName = user ? `${user.first_name} ${user.last_name}`.trim() : ''
+  const roleLabel = user ? ROLE_LABELS[user.role] ?? user.role : ''
+  const isPersonal = user?.role === 'individual'
 
   return (
     <SidebarMenu>
@@ -61,16 +70,20 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg text-xs font-semibold">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-medium">{fullName}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {isPersonal ? 'Personal Workspace' : orgName}
+                </span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
             side={isMobile ? "bottom" : "right"}
@@ -80,36 +93,42 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg text-xs font-semibold">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-medium">{fullName}</span>
+                  <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
                 </div>
               </div>
+              {/* Org / role chip */}
+              <div className="flex items-center gap-1.5 px-2 pb-1.5">
+                <Building2 className="size-3 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground truncate">
+                  {isPersonal ? 'Personal Workspace' : orgName}
+                </span>
+                <span className={cn(
+                  'ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                  user?.role === 'admin'
+                    ? 'bg-primary/10 text-primary'
+                    : 'bg-muted text-muted-foreground'
+                )}>
+                  {roleLabel}
+                </span>
+              </div>
             </DropdownMenuLabel>
+
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate('/dashboard/settings')}>
                 <BadgeCheck />
-                Account
+                Account &amp; Settings
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem disabled>
                 <CreditCard />
                 Billing
               </DropdownMenuItem>
-              {/* <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem> */}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={toggleTheme}>

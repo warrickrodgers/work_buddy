@@ -1,127 +1,111 @@
-// src/pages/Login.tsx
-import { useState } from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import api from '@/lib/api';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-
-
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 const FormSchema = z.object({
-	firstName: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
-	lastName: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
-  email: z.string().min(2, {
-    message: "email must be at least 2 characters.",
-  }),
-  password: z.string().min(8, {
-    message: "Your password was more secure than 8 characters."
-  })
-})
+  first_name: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
+  last_name: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Enter a valid email address.' }),
+  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
+});
+
+type FormValues = z.infer<typeof FormSchema>;
 
 export default function SignUp() {
-  const [firstName, setFirstName] = useState("")
-	const [lastName, setLastName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof FormSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  })
+    defaultValues: { first_name: '', last_name: '', email: '', password: '' },
+  });
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    // TODO: Hook into your backend POST /api/auth/login
-    console.log({ email, password })
-  }
+  const onSubmit = async (values: FormValues) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await api.post('/auth/signup', {
+        first_name: values.first_name,
+        last_name: values.last_name,
+        email: values.email,
+        password: values.password,
+      });
+      const { token, user } = response.data;
+      login(token, user);
+      navigate('/onboarding');
+    } catch (err: any) {
+      setError(err.response?.data?.error ?? 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900">
       <div className="mb-6">
-        <img
-          src="/logo-transparent.png"
-          alt="App Logo"
-          className="h-50 w-auto mx-auto"
-        />
+        <img src="/logo-transparent.png" alt="App Logo" className="h-50 w-auto mx-auto" />
         <Card className="w-full max-w-sm p-4 shadow-lg">
           <CardContent>
-            <h2 className="text-2xl font-bold mb-4 text-center">Welcome Back!</h2>
-            <p className="text-l mb-4 text-center">Enter your email below to login to your account</p>
+            <h2 className="text-2xl font-bold mb-2 text-center">Create your account</h2>
+            <p className="text-sm mb-4 text-center text-muted-foreground">
+              You'll set up your workspace on the next step.
+            </p>
+            {error && (
+              <p className="text-sm text-red-500 mb-3 text-center">{error}</p>
+            )}
             <Form {...form}>
-              <form onSubmit={handleSignUp} className="space-y-4">
-							<FormField
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
                   control={form.control}
-                  name="firstName"
+                  name="first_name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
                       <FormControl>
-                        <Input
-                          id="firstName"
-                          type="firstName"
-                          placeholder="Work"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          required
-                        />
+                        <Input placeholder="Work" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-								<FormField
+                <FormField
                   control={form.control}
-                  name="lastName"
+                  name="last_name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
                       <FormControl>
-                        <Input
-                          id="lastName"
-                          type="lastName"
-                          placeholder="Buddy"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          required
-                        />
+                        <Input placeholder="Buddy" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-								<FormField
+                <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="buddy@workbuddy.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                        />
+                        <Input type="email" placeholder="buddy@workbuddy.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -132,27 +116,26 @@ export default function SignUp() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-											<FormLabel>Password</FormLabel>
+                      <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                        />
+                        <Input type="password" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" variant="outline">Signup</Button>
-                <p>Already have an account? <a href="/Login" className="underline underline-offset-4">Login</a></p>
+                <Button type="submit" className="w-full" variant="outline" disabled={loading}>
+                  {loading ? 'Creating account…' : 'Sign Up'}
+                </Button>
+                <p className="text-sm text-center">
+                  Already have an account?{' '}
+                  <a href="/login" className="underline underline-offset-4">Login</a>
+                </p>
               </form>
             </Form>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }

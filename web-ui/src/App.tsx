@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import SignUp from './pages/auth/SignUp';
 import Login from './pages/auth/Login';
 import ForgotPassword from './pages/auth/ForgotPassowrd';
+import Onboarding from './pages/auth/Onboarding';
 import PrivateRoute from './components/PrivateRoute';
 import Dashboard from './pages/dashboard/Dashboard';
 import './App.css'
@@ -30,7 +31,15 @@ function App() {
           <Route path="/signup" element={< SignUp/>}></Route>
           <Route path="/login" element={< Login/>}></Route>
           <Route path="/forgotPassword" element={< ForgotPassword/>}></Route>
-          <Route 
+          <Route
+            path="/onboarding"
+            element={
+              <PrivateRoute allowIncomplete>
+                <Onboarding />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/dashboard"
             element={
               <PrivateRoute>

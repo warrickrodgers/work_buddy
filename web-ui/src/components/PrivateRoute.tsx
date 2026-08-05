@@ -1,26 +1,41 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import api from '../lib/api'; // your Axios instance
+import { useAuth } from '../context/AuthContext';
+import api from '../lib/api';
 
-const PrivateRoute = ({ children }: { children: JSX.Element }) => {
-  const [isValid, setIsValid] = useState<boolean | null>(null);
+interface Props {
+  children: JSX.Element;
+  allowIncomplete?: boolean;
+}
+
+const PrivateRoute = ({ children, allowIncomplete = false }: Props) => {
+  const { login, user } = useAuth();
+  const [status, setStatus] = useState<'checking' | 'valid' | 'invalid'>('checking');
 
   useEffect(() => {
-    const checkToken = async () => {
+    const verify = async () => {
       try {
-        await api.get('/auth/verify'); // This should hit your backend verify endpoint
-        setIsValid(true);
+        const res = await api.get('/auth/verify');
+        // Sync stored user with the latest server state (role, onboarding_complete, etc.)
+        login(localStorage.getItem('authToken')!, res.data.user);
+        setStatus('valid');
       } catch {
-        setIsValid(false);
+        setStatus('invalid');
       }
     };
-
-    checkToken();
+    verify();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (isValid === null) return null; // Or a loading spinner
+  if (status === 'checking') return null;
+  if (status === 'invalid') return <Navigate to="/login" replace />;
 
-  return isValid ? children : <Navigate to="/login" />;
+  // Redirect incomplete users to onboarding unless they're already there
+  if (!allowIncomplete && user && !user.onboarding_complete) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return children;
 };
 
 export default PrivateRoute;
