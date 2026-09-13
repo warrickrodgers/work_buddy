@@ -124,6 +124,19 @@ class AgentClient {
     }
   }
 
+  async generateInsights(userId: number, organisationId: number): Promise<{ insights: any[] }> {
+    try {
+      const response = await this.client.post('/api/insights/generate', {
+        userId,
+        organisationId,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error generating insights:', error);
+      throw error;
+    }
+  }
+
   async healthCheck() {
     try {
       const response = await this.client.get('/health');

@@ -1,10 +1,11 @@
 import express from 'express';
-import { 
+import {
     getConversationsByUserId,
     getConversationById,
     createConversation,
     getMessagesByConversationId,
     addMessageToConversation,
+    streamMessageToConversation,
     updateConversationTitle
 } from '../../controllers/conversationController';
 import { authenticateToken } from '../../middleware/authMiddleware';
@@ -18,7 +19,8 @@ router.post('/', authenticateToken, createConversation);
 router.patch('/:id/title', authenticateToken, updateConversationTitle);
 
 // Message routes
-router.get('/:id/messages', authenticateToken, getMessagesByConversationId);
-router.post('/:id/messages', authenticateToken, addMessageToConversation);
+router.get('/:id/messages',        authenticateToken, getMessagesByConversationId);
+router.post('/:id/messages',       authenticateToken, addMessageToConversation);
+router.post('/:id/messages/stream', authenticateToken, streamMessageToConversation);
 
 export default router;

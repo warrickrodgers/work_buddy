@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
 import { ChatMessage } from '@/components/ChatMessage';
 import { Bot, User, ArrowUp, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
+import { streamChatMessage, type StreamEvent } from '@/lib/streamChat';
 import api from '@/lib/api';
 
 interface Message {
@@ -12,6 +12,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  streaming?: boolean;
 }
 
 interface ConversationCache {
@@ -19,171 +20,105 @@ interface ConversationCache {
   messages: Message[];
   lastFetched: number;
 }
+
+const CACHE_DURATION = 5 * 60 * 1000;
+
 export function WorkBuddyChat() {
   const { user } = useAuth();
   const userId = user?.id;
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [messages, setMessages]           = useState<Message[]>([]);
+  const [input, setInput]                 = useState('');
+  const [isStreaming, setIsStreaming]      = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isLoading, setIsLoading]         = useState(true);
+  const messagesEndRef  = useRef<HTMLDivElement>(null);
+  const textareaRef     = useRef<HTMLTextAreaElement>(null);
+  const abortRef        = useRef<AbortController | null>(null);
 
-  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-  // Guard clause - handle null user
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading user information...</p>
-        </div>
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Cache management
   const getCachedConversation = (): ConversationCache | null => {
-    const cached = localStorage.getItem(`conversation_${userId}`);
-    if (!cached) return null;
-    
-    const data: ConversationCache = JSON.parse(cached);
-    const now = Date.now();
-    
-    if (now - data.lastFetched < CACHE_DURATION) {
-      return data;
-    }
-    return null;
+    try {
+      const cached = localStorage.getItem(`conversation_${userId}`);
+      if (!cached) return null;
+      const data: ConversationCache = JSON.parse(cached);
+      return Date.now() - data.lastFetched < CACHE_DURATION ? data : null;
+    } catch { return null; }
   };
 
   const setCachedConversation = (convId: number, msgs: Message[]) => {
-    const cache: ConversationCache = {
+    localStorage.setItem(`conversation_${userId}`, JSON.stringify({
       conversationId: convId,
       messages: msgs,
-      lastFetched: Date.now()
-    };
-    localStorage.setItem(`conversation_${userId}`, JSON.stringify(cache));
+      lastFetched: Date.now(),
+    }));
   };
 
-  // Fetch or create conversation
   const fetchOrCreateConversation = async () => {
-  try {
-    setIsLoading(true);
-    
-    // Check cache first
-    const cached = getCachedConversation();
-    if (cached) {
-      console.log('Using cached conversation:', cached.conversationId);
-      
-      // Verify conversation still exists in DB and is GENERAL type
-      try {
-        const verifyResponse = await api.get(`/conversations/${cached.conversationId}`);
-        if (verifyResponse.data.conversation_type === 'GENERAL') {
-          setConversationId(cached.conversationId);
-          setMessages(cached.messages);
-          setIsLoading(false);
-          return cached.conversationId;
-        } else {
-          // Cached conversation is not GENERAL type, clear cache
-          console.log('Cached conversation is not GENERAL type, fetching fresh');
-          localStorage.removeItem(`conversation_${user.id}`);
-        }
-      } catch (error) {
-        console.log('Cached conversation no longer exists, fetching fresh');
-        localStorage.removeItem(`conversation_${user.id}`);
+    try {
+      setIsLoading(true);
+
+      const cached = getCachedConversation();
+      if (cached) {
+        try {
+          const v = await api.get(`/conversations/${cached.conversationId}`);
+          if (v.data.conversation_type === 'GENERAL') {
+            setConversationId(cached.conversationId);
+            setMessages(cached.messages);
+            return cached.conversationId;
+          }
+        } catch { /* stale cache */ }
+        localStorage.removeItem(`conversation_${userId}`);
       }
-    }
 
-    // Fetch user's GENERAL conversations only
-    const response = await api.get(`/conversations/user/${user.id}`);
-    const conversations = response.data;
-    
-    // Filter for GENERAL conversations only
-    const generalConversations = conversations.filter(
-      (conv: any) => conv.conversation_type === 'GENERAL'
-    );
+      const response  = await api.get(`/conversations/user/${user.id}`);
+      const generals  = (response.data as any[]).filter(c => c.conversation_type === 'GENERAL');
 
-    if (generalConversations.length > 0) {
-      // Load most recent GENERAL conversation
-      const latestConv = generalConversations[0];
-      console.log('Loading GENERAL conversation:', latestConv.id);
-      
-      const messagesResponse = await api.get(`/conversations/${latestConv.id}/messages`);
-      const data = messagesResponse.data;
-      
-      const formattedMessages = data.messages.map((msg: any) => ({
-        id: msg.id.toString(),
-        role: msg.role.toLowerCase() as 'user' | 'assistant',
-        content: msg.content,
-        timestamp: new Date(msg.created_at)
-      }));
+      if (generals.length > 0) {
+        const latest   = generals[0];
+        const msgResp  = await api.get(`/conversations/${latest.id}/messages`);
+        const formatted: Message[] = msgResp.data.messages.map((m: any) => ({
+          id:        m.id.toString(),
+          role:      m.role.toLowerCase() as 'user' | 'assistant',
+          content:   m.content,
+          timestamp: new Date(m.created_at),
+        }));
+        setConversationId(latest.id);
+        setMessages(formatted);
+        setCachedConversation(latest.id, formatted);
+        return latest.id;
+      }
 
-      setConversationId(latestConv.id);
-      setMessages(formattedMessages);
-      setCachedConversation(latestConv.id, formattedMessages);
-      
-      return latestConv.id;
-    } else {
-      // Create new GENERAL conversation
-      console.log('Creating new GENERAL conversation for user:', user.id);
-      
-      const createResponse = await api.post('/conversations', {
-        user_id: user.id,
-        title: 'New Conversation',
-        conversation_type: 'GENERAL'  // ← Explicitly set to GENERAL
+      const created = await api.post('/conversations', {
+        user_id: user.id, title: 'New Conversation', conversation_type: 'GENERAL',
       });
-
-      const newConv = createResponse.data;
-      console.log('Created GENERAL conversation:', newConv.id);
-      
-      setConversationId(newConv.id);
-      setCachedConversation(newConv.id, []);
-      
-      return newConv.id;
+      setConversationId(created.data.id);
+      setCachedConversation(created.data.id, []);
+      return created.data.id;
+    } catch (err) {
+      console.error('Error loading conversation:', err);
+      setConversationId(-1);
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error('Error loading conversation:', error);
-    setConversationId(-1);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
-  // Load conversation on mount
-  useEffect(() => {
-    fetchOrCreateConversation();
-  }, [userId]);
+  useEffect(() => { fetchOrCreateConversation(); }, [userId]);
 
-  // Add a manual cache clear function (temporary for debugging)
-  useEffect(() => {
-    // Clear cache on mount if conversationId is invalid
-    const cached = getCachedConversation();
-    if (cached && cached.conversationId) {
-      console.log('Checking cached conversation validity...');
-      api.get(`/conversations/${cached.conversationId}`)
-        .catch(() => {
-          console.log('Clearing invalid cache');
-          localStorage.removeItem(`conversation_${user.id}`);
-        });
-    }
-  }, []);
-
-  // Update cache whenever messages change
   useEffect(() => {
     if (conversationId && conversationId > 0 && messages.length > 0) {
-      console.log('Updating cache with', messages.length, 'messages');
       setCachedConversation(conversationId, messages);
     }
   }, [messages, conversationId]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
@@ -193,173 +128,183 @@ export function WorkBuddyChat() {
     }
   }, [input]);
 
-  const handleSend = async () => {
-    if (!input.trim() || !conversationId) return;
+  const STREAMING_ID = 'streaming-assistant';
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-      timestamp: new Date()
+  const handleSend = useCallback(async () => {
+    if (!input.trim() || !conversationId || isStreaming) return;
+
+    const text = input.trim();
+    setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
+    const userMsg: Message = {
+      id: `user-${Date.now()}`, role: 'user', content: text, timestamp: new Date(),
     };
 
-    const currentInput = input;
-    setInput('');
-    setIsTyping(true);
+    setMessages(prev => [
+      ...prev,
+      userMsg,
+      { id: STREAMING_ID, role: 'assistant', content: '', timestamp: new Date(), streaming: true },
+    ]);
+    setIsStreaming(true);
 
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
-
-    // Add user message to UI immediately
-    setMessages(prev => [...prev, userMessage]);
+    abortRef.current = new AbortController();
 
     try {
-      // Call bi-app API (which calls agent-server internally)
-      const response = await api.post(`/conversations/${conversationId}/messages`, {
-        role: 'USER',
-        content: currentInput
-      });
-
-      const data = response.data;
-
-      // Add assistant message to UI
-      if (data.assistantMessage) {
-        const assistantMessage: Message = {
-          id: data.assistantMessage.id.toString(),
-          role: 'assistant',
-          content: data.assistantMessage.content,
-          timestamp: new Date(data.assistantMessage.created_at)
-        };
-        
-        setMessages(prev => [...prev, assistantMessage]);
+      await streamChatMessage(
+        conversationId,
+        text,
+        (event: StreamEvent) => {
+          if (event.type === 'delta') {
+            setMessages(prev => prev.map(m =>
+              m.id === STREAMING_ID ? { ...m, content: m.content + event.text } : m
+            ));
+          } else if (event.type === 'done') {
+            const finalContent = event.kind === 'outline' ? (event.preamble ?? '') : undefined;
+            setMessages(prev => prev.map(m =>
+              m.id === STREAMING_ID
+                ? { ...m, id: event.messageId.toString(), streaming: false, timestamp: new Date(event.createdAt), ...(finalContent !== undefined ? { content: finalContent } : {}) }
+                : m
+            ));
+          } else if (event.type === 'error') {
+            setMessages(prev => prev.map(m =>
+              m.id === STREAMING_ID
+                ? { ...m, id: `err-${Date.now()}`, streaming: false, content: 'Sorry, something went wrong. Please try again.' }
+                : m
+            ));
+          }
+        },
+        abortRef.current.signal,
+      );
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        setMessages(prev => prev.map(m =>
+          m.id === STREAMING_ID
+            ? { ...m, id: `err-${Date.now()}`, streaming: false, content: 'Sorry, I encountered an error. Please try again.' }
+            : m
+        ));
       }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error processing your request. Please try again.',
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsTyping(false);
+      setIsStreaming(false);
     }
-  };
+  }, [input, conversationId, isStreaming]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center flex-1 dark:bg-none dark:bg-background">
+      <div className="flex items-center justify-center flex-1 bg-background">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading conversation...</p>
+          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Loading conversation…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 dark:bg-none dark:bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-card shadow-sm shrink-0">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-semibold text-foreground">Team Efficiency Assistant</h1>
-          <p className="text-sm text-muted-foreground mt-1">Powered by AI to help improve workplace productivity</p>
+    <div className="flex flex-col flex-1 min-h-0 bg-background">
+
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="shrink-0 border-b border-border px-6 py-3 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+          <Bot className="w-4 h-4 text-primary-foreground" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-foreground leading-none">Simon</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Your leadership coaching partner</p>
         </div>
       </div>
 
-      {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 min-h-0">
-        <div className="max-w-4xl mx-auto space-y-4">
+      {/* ── Message list ───────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
           {messages.length === 0 && (
-            <div className="text-center py-12">
-              <Bot className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <h2 className="text-xl font-medium text-muted-foreground mb-2">Start a conversation</h2>
-              <p className="text-muted-foreground/60">Ask me anything about improving team efficiency</p>
+            <div className="text-center py-20">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Bot className="w-7 h-7 text-primary" />
+              </div>
+              <h2 className="text-lg font-semibold text-foreground mb-1">Start a conversation</h2>
+              <p className="text-sm text-muted-foreground">Ask Simon about leadership, team challenges, or workplace productivity</p>
             </div>
           )}
 
-          {messages.map((message) => (
+          {messages.map(message => (
             <div
               key={message.id}
-              className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
             >
-              {message.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-5 h-5 text-primary-foreground" />
+              {/* Avatar */}
+              {message.role === 'assistant' ? (
+                <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Bot className="w-3.5 h-3.5 text-primary-foreground" />
+                </div>
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <User className="w-3.5 h-3.5 text-muted-foreground" />
                 </div>
               )}
 
+              {/* Bubble / text */}
               {message.role === 'user' ? (
-                <div className="px-4 py-3 max-w-2xl rounded-2xl bg-primary">
+                <div className="max-w-[75%] px-4 py-2.5 rounded-2xl rounded-tr-sm bg-primary">
                   <ChatMessage content={message.content} role="user" />
                 </div>
               ) : (
-                <Card className="nm-raised border-0 px-5 py-4 max-w-2xl">
-                  <ChatMessage content={message.content} role="assistant" />
-                </Card>
-              )}
-
-              {message.role === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                  <User className="w-5 h-5 text-muted-foreground" />
+                <div className="flex-1 pt-0.5 min-w-0">
+                  {message.content === '' && message.streaming ? (
+                    <span
+                      aria-label="Simon is typing"
+                      className="inline-block w-[2px] h-[0.9em] bg-foreground/50 rounded-sm align-middle animate-[caret_1s_ease-in-out_infinite]"
+                    />
+                  ) : (
+                    <ChatMessage
+                      content={message.content}
+                      role="assistant"
+                      streaming={message.streaming}
+                    />
+                  )}
                 </div>
               )}
             </div>
           ))}
 
-          {isTyping && (
-            <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                <Bot className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <Card className="nm-raised border-0 px-4 py-3">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </Card>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-border bg-card shadow-lg shrink-0">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="relative rounded-3xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+      {/* ── Input ──────────────────────────────────────────────── */}
+      <div className="shrink-0 border-t border-border bg-background px-4 py-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="relative rounded-2xl border border-border bg-card shadow-sm transition-shadow focus-within:shadow-md focus-within:border-primary/40">
             <Textarea
               ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Ask about team efficiency, productivity tips, or workflow improvements..."
-              className="min-h-[56px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-4 pr-14 focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] leading-6 text-foreground placeholder:text-muted-foreground"
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask Simon anything…"
+              className="min-h-[52px] max-h-[200px] resize-none border-0 bg-transparent px-4 py-3.5 pr-14 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground"
               rows={1}
-              disabled={!conversationId}
+              disabled={!conversationId || isStreaming}
             />
             <Button
               onClick={handleSend}
-              disabled={!input.trim() || isTyping || !conversationId}
+              disabled={!input.trim() || isStreaming || !conversationId}
               size="icon"
-              className="absolute top-1/2 -translate-y-1/2 right-3 h-8 w-8 rounded-lg hover:opacity-90 disabled:opacity-30 bg-primary text-primary-foreground"
+              className="absolute bottom-2 right-2 h-8 w-8 rounded-xl disabled:opacity-30 bg-primary text-primary-foreground"
             >
-              <ArrowUp className="w-4 h-4" />
+              {isStreaming
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <ArrowUp className="w-3.5 h-3.5" />
+              }
             </Button>
           </div>
+          <p className="text-center text-[11px] text-muted-foreground/50 mt-2">
+            Simon can make mistakes. Verify important information.
+          </p>
         </div>
       </div>
     </div>

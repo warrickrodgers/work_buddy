@@ -40,6 +40,7 @@ model User {
     conversations   Conversation[]
     challenges      Challenge[]
     ingestion_documents IngestionDocument[]
+    insights        Insight[]
 }
 
 // For one-time data analysis
@@ -362,4 +363,16 @@ model CheckInPrompt {
   responded_at  DateTime?
 
   @@index([phase_id])
+}
+
+model Insight {
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [user_id], references: [id])
+  user_id      Int
+  summary      Json
+  generated_at DateTime @default(now())
+  period_start DateTime
+  period_end   DateTime
+
+  @@index([user_id])
 }

@@ -141,6 +141,108 @@ export const getMessagesByConversationId = async (req: Request, res: Response) =
     }
 };
 
+export const streamMessageToConversation = async (req: Request, res: Response) => {
+  const conversationId = parseInt(req.params.id);
+  const { content } = req.body;
+
+  const send = (data: object) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+  try {
+    const userMessage = await prisma.chatMessage.create({
+      data: { conversation_id: conversationId, role: 'USER', content },
+    });
+    await prisma.conversation.update({ where: { id: conversationId }, data: { updated_at: new Date() } });
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: { messages: { orderBy: { created_at: 'asc' }, take: 10 } },
+    });
+    if (!conversation) return res.status(404).json({ error: 'Conversation not found' });
+
+    const convUser = await prisma.user.findUnique({
+      where: { id: conversation.user_id },
+      select: { organisation_id: true },
+    });
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    send({ type: 'init', userMessageId: userMessage.id });
+
+    const agentUrl = process.env.AGENT_SERVICE_URL || 'http://localhost:4000';
+    const agentRes = await fetch(`${agentUrl}/api/conversations/generate/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId:       conversation.user_id,
+        conversationId,
+        userMessage:  content,
+        history:      conversation.messages.map(m => ({ role: m.role.toLowerCase(), content: m.content })),
+        organisationId: convUser?.organisation_id,
+      }),
+    });
+
+    if (!agentRes.ok || !agentRes.body) {
+      send({ type: 'error', message: 'Agent unavailable' });
+      res.end();
+      return;
+    }
+
+    const reader  = agentRes.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let accumulated = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const events = buf.split('\n\n');
+      buf = events.pop() ?? '';
+
+      for (const raw of events) {
+        const dataLine = raw.split('\n').find(l => l.startsWith('data: '));
+        if (!dataLine) continue;
+        let parsed: any;
+        try { parsed = JSON.parse(dataLine.slice(6)); } catch { continue; }
+
+        if (parsed.type === 'delta') {
+          accumulated += parsed.text;
+          send({ type: 'delta', text: parsed.text });
+
+        } else if (parsed.type === 'done') {
+          // For outlines use preamble as the visible message; fall back to fullText then accumulated
+          let dbContent = parsed.kind === 'outline'
+            ? (parsed.preamble ?? parsed.fullText ?? accumulated)
+            : (parsed.fullText ?? accumulated);
+          let extra: Record<string, any> = parsed.preamble ? { preamble: parsed.preamble } : {};
+
+          if (parsed.kind === 'outline' && conversation.challenge_id) {
+            const outline = await persistOutline(conversation.challenge_id, conversation.user_id, parsed.outline);
+            extra = { kind: 'outline', outlineId: outline.id, preamble: parsed.preamble, outline: parsed.outline };
+          }
+
+          const assistantMessage = await prisma.chatMessage.create({
+            data: { conversation_id: conversationId, role: 'ASSISTANT', content: dbContent },
+          });
+          await prisma.conversation.update({ where: { id: conversationId }, data: { updated_at: new Date() } });
+
+          send({ type: 'done', kind: parsed.kind ?? 'message', messageId: assistantMessage.id, createdAt: assistantMessage.created_at, ...extra });
+
+        } else if (parsed.type === 'error') {
+          send({ type: 'error', message: parsed.message ?? 'Stream error' });
+        }
+      }
+    }
+    res.end();
+  } catch (err: any) {
+    console.error('Stream proxy error:', err);
+    try { send({ type: 'error', message: 'Stream failed' }); res.end(); } catch {}
+  }
+};
+
 export const addMessageToConversation = async (req: Request, res: Response) => {
     try {
         const conversationId = parseInt(req.params.id);

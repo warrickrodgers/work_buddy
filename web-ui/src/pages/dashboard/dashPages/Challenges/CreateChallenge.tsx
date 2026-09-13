@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '../../../../context/AuthContext';
+import { MarkdownContent } from '@/components/ChatMessage';
 
 type AudienceType = 'individual' | 'team' | 'organization';
 type ChallengeType = 'habit' | 'skill' | 'behavior' | 'performance' | 'accountability';
@@ -28,11 +29,60 @@ interface ChallengeFormData {
   aiNotes: string;
 }
 
-function ReviewRow({ label, value }: { label: string; value: string }) {
+function ReviewRow({ label, value, markdown }: { label: string; value: string; markdown?: boolean }) {
   return (
     <div className="flex gap-2 text-sm">
       <span className="text-muted-foreground min-w-[140px] shrink-0">{label}</span>
-      <span className="text-foreground break-words">{value}</span>
+      {markdown && value
+        ? <MarkdownContent content={value} className="flex-1 text-foreground" />
+        : <span className="text-foreground break-words">{value}</span>
+      }
+    </div>
+  );
+}
+
+function MarkdownTextarea({
+  id, value, onChange, placeholder, minHeight = 'min-h-[80px]', hasError = false,
+}: {
+  id: string; value: string; onChange: (v: string) => void;
+  placeholder: string; minHeight?: string; hasError?: boolean;
+}) {
+  const [preview, setPreview] = useState(false);
+  return (
+    <div>
+      <div className="flex justify-end gap-1 mb-1.5">
+        <button
+          type="button"
+          onClick={() => setPreview(false)}
+          className={`text-xs px-2.5 py-0.5 rounded-md transition-colors ${
+            !preview ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => setPreview(true)}
+          className={`text-xs px-2.5 py-0.5 rounded-md transition-colors ${
+            preview ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Preview
+        </button>
+      </div>
+      {preview ? (
+        value.trim()
+          ? <MarkdownContent content={value} className={`p-3 rounded-md border border-border/50 ${minHeight}`} />
+          : <p className={`text-sm text-muted-foreground italic p-3 rounded-md border border-border/50 ${minHeight}`}>Nothing to preview yet</p>
+      ) : (
+        <Textarea
+          id={id}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`${minHeight} ${hasError ? 'border-destructive' : ''}`}
+        />
+      )}
     </div>
   );
 }
@@ -203,7 +253,7 @@ export function CreateChallenge() {
     <div className="mt-2 rounded-md bg-muted/40 p-4 space-y-2.5">
       <p className="text-sm font-medium text-foreground mb-1">Review your challenge</p>
       <ReviewRow label="Title" value={formData.title} />
-      <ReviewRow label="Description" value={formData.description} />
+      <ReviewRow label="Description" value={formData.description} markdown />
       <ReviewRow label="Category" value={formData.category} />
       <ReviewRow label="Challenge Type" value={formData.challengeType} />
       <ReviewRow label="Audience" value={formData.audienceType} />
@@ -211,8 +261,8 @@ export function CreateChallenge() {
       {formData.teamId && <ReviewRow label="Team ID" value={formData.teamId} />}
       <ReviewRow label="Start Date" value={formData.startDate} />
       {formData.endDate && <ReviewRow label="End Date" value={formData.endDate} />}
-      <ReviewRow label="Success Criteria" value={formData.successCriteria} />
-      {formData.metrics && <ReviewRow label="KPIs / Metrics" value={formData.metrics} />}
+      <ReviewRow label="Success Criteria" value={formData.successCriteria} markdown />
+      {formData.metrics && <ReviewRow label="KPIs / Metrics" value={formData.metrics} markdown />}
     </div>
   );
 
@@ -268,13 +318,16 @@ export function CreateChallenge() {
               </div>
 
               <div>
-                <Label htmlFor="description" className="my-3">Description *</Label>
-                <Textarea
+                <div className="flex items-center justify-between my-3">
+                  <Label htmlFor="description">Description * <span className="text-[10px] text-muted-foreground font-normal">· supports markdown</span></Label>
+                </div>
+                <MarkdownTextarea
                   id="description"
-                  placeholder="Explain what this challenge is and why it matters..."
                   value={formData.description}
-                  onChange={(e) => handleChange('description', e.target.value)}
-                  className={`min-h-[100px] ${errors.description ? 'border-destructive' : ''}`}
+                  onChange={v => handleChange('description', v)}
+                  placeholder="Explain what this challenge is and why it matters..."
+                  minHeight="min-h-[100px]"
+                  hasError={!!errors.description}
                 />
                 {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
               </div>
@@ -414,25 +467,28 @@ export function CreateChallenge() {
               </div>
 
               <div>
-                <Label htmlFor="successCriteria" className="my-3">Success Criteria *</Label>
-                <Textarea
+                <div className="flex items-center justify-between my-3">
+                  <Label htmlFor="successCriteria">Success Criteria * <span className="text-[10px] text-muted-foreground font-normal">· supports markdown</span></Label>
+                </div>
+                <MarkdownTextarea
                   id="successCriteria"
-                  placeholder="Describe what completion or success looks like..."
                   value={formData.successCriteria}
-                  onChange={(e) => handleChange('successCriteria', e.target.value)}
-                  className={`min-h-[80px] ${errors.successCriteria ? 'border-destructive' : ''}`}
+                  onChange={v => handleChange('successCriteria', v)}
+                  placeholder="Describe what completion or success looks like..."
+                  hasError={!!errors.successCriteria}
                 />
                 {errors.successCriteria && <p className="text-sm text-destructive mt-1">{errors.successCriteria}</p>}
               </div>
 
               <div>
-                <Label htmlFor="metrics" className="my-3">Measurable KPIs (Optional)</Label>
-                <Textarea
+                <div className="flex items-center justify-between my-3">
+                  <Label htmlFor="metrics">Measurable KPIs <span className="text-[10px] text-muted-foreground font-normal">· optional · supports markdown</span></Label>
+                </div>
+                <MarkdownTextarea
                   id="metrics"
-                  placeholder="e.g., 'Increase meeting attendance by 20%', 'Reduce response time to under 2 hours'"
                   value={formData.metrics}
-                  onChange={(e) => handleChange('metrics', e.target.value)}
-                  className="min-h-[80px]"
+                  onChange={v => handleChange('metrics', v)}
+                  placeholder="e.g., 'Increase meeting attendance by 20%', 'Reduce response time to under 2 hours'"
                 />
                 <p className="text-xs text-muted-foreground mt-1">Specific, quantifiable measures of progress</p>
               </div>
@@ -451,7 +507,7 @@ export function CreateChallenge() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="aiNotes" className="my-3">AI Notes (Optional)</Label>
+                <Label htmlFor="aiNotes" className="my-3">AI Notes <span className="text-[10px] text-muted-foreground font-normal">· optional</span></Label>
                 <Textarea
                   id="aiNotes"
                   placeholder="Any additional context, constraints, or special considerations the AI should know about..."
@@ -496,13 +552,16 @@ export function CreateChallenge() {
           </div>
 
           <div>
-            <Label htmlFor="description" className="my-3">Description *</Label>
-            <Textarea
+            <div className="flex items-center justify-between my-3">
+              <Label htmlFor="description">Description * <span className="text-[10px] text-muted-foreground font-normal">· supports markdown</span></Label>
+            </div>
+            <MarkdownTextarea
               id="description"
-              placeholder="Explain what this challenge is and why it matters..."
               value={formData.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              className={`min-h-[100px] ${errors.description ? 'border-destructive' : ''}`}
+              onChange={v => handleChange('description', v)}
+              placeholder="Explain what this challenge is and why it matters..."
+              minHeight="min-h-[100px]"
+              hasError={!!errors.description}
             />
             {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
           </div>
@@ -640,25 +699,28 @@ export function CreateChallenge() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="successCriteria" className="my-3">Success Criteria *</Label>
-            <Textarea
+            <div className="flex items-center justify-between my-3">
+              <Label htmlFor="successCriteria">Success Criteria * <span className="text-[10px] text-muted-foreground font-normal">· supports markdown</span></Label>
+            </div>
+            <MarkdownTextarea
               id="successCriteria"
-              placeholder="Describe what completion or success looks like..."
               value={formData.successCriteria}
-              onChange={(e) => handleChange('successCriteria', e.target.value)}
-              className={`min-h-[80px] ${errors.successCriteria ? 'border-destructive' : ''}`}
+              onChange={v => handleChange('successCriteria', v)}
+              placeholder="Describe what completion or success looks like..."
+              hasError={!!errors.successCriteria}
             />
             {errors.successCriteria && <p className="text-sm text-destructive mt-1">{errors.successCriteria}</p>}
           </div>
 
           <div>
-            <Label htmlFor="metrics" className="my-3">Measurable KPIs (Optional)</Label>
-            <Textarea
+            <div className="flex items-center justify-between my-3">
+              <Label htmlFor="metrics">Measurable KPIs <span className="text-[10px] text-muted-foreground font-normal">· optional · supports markdown</span></Label>
+            </div>
+            <MarkdownTextarea
               id="metrics"
-              placeholder="e.g., 'Increase meeting attendance by 20%', 'Reduce response time to under 2 hours'"
               value={formData.metrics}
-              onChange={(e) => handleChange('metrics', e.target.value)}
-              className="min-h-[80px]"
+              onChange={v => handleChange('metrics', v)}
+              placeholder="e.g., 'Increase meeting attendance by 20%', 'Reduce response time to under 2 hours'"
             />
             <p className="text-xs text-muted-foreground mt-1">Specific, quantifiable measures of progress</p>
           </div>
@@ -672,7 +734,7 @@ export function CreateChallenge() {
         </CardHeader>
         <CardContent>
           <div>
-            <Label htmlFor="aiNotes" className="my-3">AI Notes (Optional)</Label>
+            <Label htmlFor="aiNotes" className="my-3">AI Notes <span className="text-[10px] text-muted-foreground font-normal">· optional</span></Label>
             <Textarea
               id="aiNotes"
               placeholder="Any additional context, constraints, or special considerations the AI should know about..."

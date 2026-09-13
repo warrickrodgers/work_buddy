@@ -16,6 +16,11 @@ import {
   Lightbulb,
   MessageSquare,
   FileText,
+  RefreshCw,
+  TrendingDown as RiskIcon,
+  Trophy,
+  BarChart2,
+  Repeat2,
 } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ProgressBar } from '@/components/ProgressBar';
@@ -40,6 +45,20 @@ interface ActionItem {
   source_type: 'challenge' | 'system';
   source_id?: number;
 }
+
+interface InsightCard {
+  title:   string;
+  body:    string;
+  tag:     'Progress' | 'Pattern' | 'Risk' | 'Win';
+  forward: string;
+}
+
+const TAG_CONFIG: Record<string, { icon: React.ElementType; classes: string }> = {
+  Progress: { icon: BarChart2,  classes: 'bg-[hsl(var(--status-completed)/0.12)] text-[hsl(var(--status-completed))]' },
+  Pattern:  { icon: Repeat2,    classes: 'bg-accent text-accent-foreground' },
+  Risk:     { icon: RiskIcon,   classes: 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400' },
+  Win:      { icon: Trophy,     classes: 'bg-[hsl(var(--status-active)/0.12)] text-[hsl(var(--status-active))]' },
+};
 
 const RULE_ICONS: Record<string, React.ElementType> = {
   overdue:       Clock,
@@ -83,11 +102,15 @@ function greeting(name: string): string {
 export function DashboardHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [challenges,   setChallenges]   = useState<Challenge[]>([]);
-  const [isLoading,    setIsLoading]    = useState(true);
-  const [docCount,     setDocCount]     = useState<number | null>(null);
-  const [actionItems,  setActionItems]  = useState<ActionItem[]>([]);
-  const [itemsLoading, setItemsLoading] = useState(true);
+  const [challenges,      setChallenges]      = useState<Challenge[]>([]);
+  const [isLoading,       setIsLoading]       = useState(true);
+  const [docCount,        setDocCount]        = useState<number | null>(null);
+  const [actionItems,     setActionItems]     = useState<ActionItem[]>([]);
+  const [itemsLoading,    setItemsLoading]    = useState(true);
+  const [insights,        setInsights]        = useState<InsightCard[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(true);
+  const [insightsRefreshing, setInsightsRefreshing] = useState(false);
+  const [insightsAge,     setInsightsAge]     = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -108,7 +131,34 @@ export function DashboardHome() {
       .then(res => setActionItems(res.data.action_items ?? []))
       .catch(() => setActionItems([]))
       .finally(() => setItemsLoading(false));
+
+    api.get('/insights/latest')
+      .then(res => {
+        const insight = res.data.insight;
+        if (insight?.summary) {
+          setInsights(insight.summary as InsightCard[]);
+          setInsightsAge(new Date(insight.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setInsightsLoading(false));
   }, [user?.id]);
+
+  const handleRefreshInsights = async () => {
+    setInsightsRefreshing(true);
+    try {
+      const res = await api.post('/insights/generate');
+      const insight = res.data.insight;
+      if (insight?.summary) {
+        setInsights(insight.summary as InsightCard[]);
+        setInsightsAge(new Date(insight.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      }
+    } catch {
+      // silent — stale insights remain
+    } finally {
+      setInsightsRefreshing(false);
+    }
+  };
 
   const active = challenges.filter(c => c.status === 'ACTIVE');
   const completed = challenges.filter(c => c.status === 'COMPLETED');
@@ -394,20 +444,86 @@ export function DashboardHome() {
 
           {/* Insights */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Insights</h2>
-            <Card className="nm-raised border-0">
-              <CardContent className="py-10 text-center flex flex-col items-center gap-3">
-                <div className="p-3 rounded-full bg-amber-50 dark:bg-amber-950">
-                  <Lightbulb className="w-5 h-5 text-amber-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Weekly insights coming in Phase 6B</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Simon will analyse your challenge progress and conversations to surface patterns and coaching nudges.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-foreground">Insights</h2>
+                {insightsAge && (
+                  <span className="text-xs text-muted-foreground">· {insightsAge}</span>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefreshInsights}
+                disabled={insightsRefreshing}
+                className="gap-1.5 text-xs"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${insightsRefreshing ? 'animate-spin' : ''}`} />
+                {insightsRefreshing ? 'Thinking…' : 'Refresh'}
+              </Button>
+            </div>
+
+            {insightsLoading ? (
+              [1, 2].map(n => (
+                <Card key={n} className="nm-raised border-0">
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex items-start gap-3 animate-pulse">
+                      <div className="size-7 rounded-md bg-muted shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 bg-muted rounded w-2/3" />
+                        <div className="h-3 bg-muted rounded w-full" />
+                        <div className="h-3 bg-muted rounded w-4/5" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : insights.length === 0 ? (
+              <Card className="nm-raised border-0">
+                <CardContent className="py-10 text-center flex flex-col items-center gap-3">
+                  <div className="p-3 rounded-full bg-amber-50 dark:bg-amber-950">
+                    <Lightbulb className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">No insights yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Log some challenge progress, then hit Refresh to get Simon's analysis.
+                    </p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={handleRefreshInsights} disabled={insightsRefreshing}>
+                    Generate insights
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {insights.map((insight, i) => {
+                  const cfg  = TAG_CONFIG[insight.tag] ?? TAG_CONFIG.Progress;
+                  const Icon = cfg.icon;
+                  return (
+                    <Card key={i} className="nm-raised border-0">
+                      <CardContent className="pt-4 pb-4">
+                        <div className="flex items-start gap-3">
+                          <div className={`p-1.5 rounded-md shrink-0 mt-0.5 ${cfg.classes}`}>
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-sm font-medium text-foreground">{insight.title}</p>
+                              <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${cfg.classes}`}>
+                                {insight.tag}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{insight.body}</p>
+                            <p className="text-xs text-primary mt-2 font-medium">→ {insight.forward}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

@@ -145,9 +145,10 @@ interface ChatMessageProps {
   content: string;
   role: 'user' | 'assistant';
   className?: string;
+  streaming?: boolean;
 }
 
-export function ChatMessage({ content, role, className }: ChatMessageProps) {
+export function ChatMessage({ content, role, className, streaming }: ChatMessageProps) {
   const cleaned = cleanMarkdown(content);
   const components = role === 'user' ? userComponents : assistantComponents;
 
@@ -156,6 +157,12 @@ export function ChatMessage({ content, role, className }: ChatMessageProps) {
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {cleaned}
       </ReactMarkdown>
+      {streaming && (
+        <span
+          aria-hidden
+          className="inline-block w-[2px] h-[0.9em] bg-foreground/60 rounded-sm align-middle ml-0.5 animate-[caret_1s_ease-in-out_infinite]"
+        />
+      )}
     </div>
   );
 }

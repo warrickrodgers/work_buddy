@@ -12,6 +12,7 @@ import analyzeRoute from './routes/analyze';
 import generatePlanRoute from './routes/generatePlan';
 import conversationRoutes from './routes/conversations';
 import documentRoutes from './routes/documents';
+import insightRoutes from './routes/insights';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -29,6 +30,7 @@ app.use('/analyze', analyzeRoute);
 app.use('/generate-plan', generatePlanRoute);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/insights', insightRoutes);
 
 // Start server with ChromaDB and knowledge base
 async function startServer() {

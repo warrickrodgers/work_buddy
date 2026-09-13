@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { generateAIResponse, searchContext } from '../controllers/conversationController';
+import { generateAIResponse, streamAIResponse, searchContext } from '../controllers/conversationController';
 import { logger } from '../utils/logger';
 import { chromaService } from '../services/chromaService';
 import { reloadKnowledgeBase } from '../services/knowledgeLoader';
@@ -8,6 +8,7 @@ const router = express.Router();
 
 // Generate AI response
 router.post('/generate', generateAIResponse);
+router.post('/generate/stream', streamAIResponse);
 
 // Search context (will be enhanced with ChromaDB later)
 router.post('/search', searchContext);

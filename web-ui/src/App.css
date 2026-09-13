@@ -44,6 +44,12 @@
   }
 }
 
+/* ── Chat streaming cursor ──────────────────────────────────────── */
+@keyframes caret {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
 /* ── Neumorphic shadow utilities ────────────────────────────────── */
 @layer utilities {
   /* Raised — element appears to emerge from the surface */

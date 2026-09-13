@@ -54,7 +54,7 @@ async function runPipeline(
   fileType: FileType,
   meta: Omit<ChunkMetadata, 'chunkIndex' | 'totalChunks'>
 ): Promise<void> {
-  await biAppPatch(`/internal/ingestion-documents/${documentId}`, { status: 'PROCESSING' });
+  await biAppPatch(`/api/internal/ingestion-documents/${documentId}`, { status: 'PROCESSING' });
 
   try {
     const parsed = await parseDocument(buffer, fileType);
@@ -68,7 +68,7 @@ async function runPipeline(
 
     await vectorStore.store(COLLECTION, storedChunks);
 
-    await biAppPatch(`/internal/ingestion-documents/${documentId}`, {
+    await biAppPatch(`/api/internal/ingestion-documents/${documentId}`, {
       status:      'COMPLETE',
       chunk_count: chunks.length,
     });
@@ -76,7 +76,7 @@ async function runPipeline(
     logger.info(`Ingestion complete: ${documentId} (${chunks.length} chunks)`);
   } catch (err: any) {
     logger.error(`Ingestion failed: ${documentId}:`, err);
-    await biAppPatch(`/internal/ingestion-documents/${documentId}`, {
+    await biAppPatch(`/api/internal/ingestion-documents/${documentId}`, {
       status:        'FAILED',
       error_message: err?.message ?? 'Unknown error',
     }).catch(() => {});
@@ -101,7 +101,7 @@ export async function ingestDocument(
 
   const documentId = crypto.randomUUID();
 
-  await biAppPost('/internal/ingestion-documents', {
+  await biAppPost('/api/internal/ingestion-documents', {
     id:             documentId,
     organisation_id: organisationId,
     uploaded_by_id: userId,
@@ -132,7 +132,7 @@ export async function deleteDocument(
   documentId: string
 ): Promise<void> {
   await vectorStore.delete(COLLECTION, { documentId });
-  await biAppDelete(`/internal/ingestion-documents/${documentId}`);
+  await biAppDelete(`/api/internal/ingestion-documents/${documentId}`);
   logger.info(`Deleted document ${documentId} from ChromaDB and Postgres`);
 }
 

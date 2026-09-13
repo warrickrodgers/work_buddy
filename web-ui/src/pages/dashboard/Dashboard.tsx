@@ -1,49 +1,52 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import {
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar"
-import React, { Suspense } from 'react';
-import { Outlet, BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Suspense, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+
+function AnimatedOutlet() {
+  const location = useLocation();
+  const reduced = useReducedMotion();
+  const [scrollLocked, setScrollLocked] = useState(false);
+
+  return (
+    <div
+      className="relative flex flex-col flex-1 min-h-0"
+      style={{
+        overflowY: scrollLocked ? 'hidden' : 'auto',
+        scrollbarGutter: 'stable',
+      }}
+    >
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: reduced ? 0 : 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="flex flex-col flex-1 min-h-0"
+          onAnimationStart={() => setScrollLocked(true)}
+          onAnimationComplete={() => setScrollLocked(false)}
+        >
+          <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading…</div>}>
+            <Outlet />
+          </Suspense>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function Page() {
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        {/* <header className="flex h-16 shrink-0 items-center gap-2">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header> */}
         <div className="flex flex-col flex-1 min-h-0">
-          <Suspense fallback={<div>Loading...</div>}>
-            <Outlet />
-          </Suspense>
+          <AnimatedOutlet />
         </div>
       </SidebarInset>
     </SidebarProvider>

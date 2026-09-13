@@ -551,10 +551,11 @@ const SAMPLE_MEMORIES: Memory[] = [
 ];
 
 function AITab() {
-  const [tone, setTone]         = useState<ToneId>('coaching');
-  const [memoryOn, setMemoryOn] = useState(true);
-  const [memories, setMemories] = useState<Memory[]>(SAMPLE_MEMORIES);
-  const [aboutYou, setAboutYou] = useState('');
+  const [tone,       setTone]       = useState<ToneId>('coaching');
+  const [memoryOn,   setMemoryOn]   = useState(true);
+  const [insightsOn, setInsightsOn] = useState(true);
+  const [memories,   setMemories]   = useState<Memory[]>(SAMPLE_MEMORIES);
+  const [aboutYou,   setAboutYou]   = useState('');
 
   const deleteMemory = (id: string) => setMemories(prev => prev.filter(m => m.id !== id));
 
@@ -719,6 +720,55 @@ function AITab() {
       </Section>
 
       <Section index={2}>
+        <section className="space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold">Weekly insights</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Simon analyses your challenge progress each week and surfaces coaching nudges on your dashboard.
+              </p>
+            </div>
+            <motion.button
+              role="switch"
+              aria-checked={insightsOn}
+              onClick={() => setInsightsOn(v => !v)}
+              whileTap={{ scale: 0.9 }}
+              className={cn(
+                'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors',
+                insightsOn ? 'bg-primary' : 'bg-muted'
+              )}
+            >
+              <motion.span
+                layout
+                transition={{ type: 'spring', stiffness: 600, damping: 35 }}
+                className={cn(
+                  'pointer-events-none block size-4 rounded-full bg-white shadow-sm ring-0',
+                  insightsOn ? 'translate-x-4' : 'translate-x-0'
+                )}
+              />
+            </motion.button>
+          </div>
+          <AnimatePresence initial={false}>
+            {!insightsOn && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-lg border border-dashed px-4 py-4 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Insights are off. The Insights section on your dashboard will show a disabled state.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
+      </Section>
+
+      <Section index={4}>
         <section className="space-y-4">
           <div>
             <h2 className="text-base font-semibold">About you</h2>
