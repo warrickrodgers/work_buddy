@@ -126,5 +126,5 @@ Contributions to improve the agent server are welcome. Focus areas:
 ## Related Components
 
 - **bi-app**: Main WorkBuddy application
-- **web-ui**: Frontend interface
+- **web-app**: Frontend interface
 - **[Other microservices]**: Related system components

@@ -25,7 +25,7 @@ work_buddy/
 ├── architecture.md          ← This document
 ├── README.md
 ├── project_structure.md
-├── web-ui/                  ← React/Vite frontend (user interface)
+├── web-app/                 ← React/Vite authenticated app (user interface)
 ├── bi-app/                  ← Business intelligence API (orchestration layer)
 └── agent-server/            ← AI agent service (Simon — LLM + vector memory)
 ```
@@ -43,7 +43,7 @@ The three services are independently deployable Node.js applications that commun
                             │ HTTPS
                             ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                     web-ui  (React / Vite)                       │
+│                     web-app  (React / Vite)                      │
 │                         Port 5173                                │
 │  - Authentication pages (Login, SignUp, Forgot Password)         │
 │  - Dashboard with sidebar navigation                             │
@@ -87,7 +87,7 @@ The three services are independently deployable Node.js applications that commun
 
 ---
 
-## Service Detail: web-ui
+## Service Detail: web-app
 
 **Stack:** React 18 · TypeScript · Vite · Tailwind CSS · shadcn/ui · React Router
 
@@ -289,7 +289,7 @@ ChatMessage
 ```
 User types message in WorkBuddyChat
     ↓
-web-ui POST /api/conversations/:id/messages { role: USER, content }
+web-app POST /api/conversations/:id/messages { role: USER, content }
     ↓
 bi-app saves UserMessage to PostgreSQL
 bi-app fetches last 10 messages for context window
@@ -304,8 +304,8 @@ agent-server POST /api/conversations/generate
 bi-app saves AssistantMessage to PostgreSQL
 bi-app returns { userMessage, assistantMessage }
     ↓
-web-ui renders assistant response as rich Markdown
-web-ui updates localStorage cache
+web-app renders assistant response as rich Markdown
+web-app updates localStorage cache
 ```
 
 Simon's response style is governed by the `goals.json` tone guidelines: empathetic, visionary, humble. He asks "why" before offering direction, uses storytelling, and avoids corporate jargon.
@@ -384,7 +384,7 @@ The knowledge base encodes nine leadership frameworks Simon draws upon:
 
 | Service | Port |
 |---------|------|
-| web-ui | 5173 |
+| web-app | 5173 |
 | bi-app | 3000 |
 | agent-server | 4000 |
 | ChromaDB | 8000 |

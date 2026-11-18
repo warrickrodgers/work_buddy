@@ -1,4 +1,4 @@
-// web-ui/src/lib/appNavigationData.ts
+// web-app/src/lib/appNavigationData.ts
 import {
   CompassIcon,
   FolderUp,

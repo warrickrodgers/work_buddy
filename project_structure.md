@@ -132,7 +132,7 @@
 │       │   └── agentClient.ts
 │       └── types/
 │           └── index.ts
-└── web-ui/
+└── web-app/
     ├── components.json
     ├── eslint.config.js
     ├── index.html

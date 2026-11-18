@@ -145,7 +145,7 @@ This gate must pass before any Phase 3b work begins.
 
 ### Phase 3b — UI ✅ COMPLETE
 
-#### ✅ Step B1 — Outline card in chat (`web-ui/src/pages/dashboard/dashPages/Challenges/ChallengeDetail.tsx`)
+#### ✅ Step B1 — Outline card in chat (`web-app/src/pages/dashboard/dashPages/Challenges/ChallengeDetail.tsx`)
 
 When a chat message has `kind === "outline"`:
 - Render Simon's `preamble` as a normal assistant message
@@ -155,7 +155,7 @@ Styling: match whatever Phase 2 lands on (neumorphic if shipped, or fall back to
 
 #### ✅ Step B2 — Outline Detail page
 
-New route: `/dashboard/challenges/:id/outlines/:outlineId`. New file: `web-ui/src/pages/dashboard/dashPages/Outlines/OutlineDetail.tsx`.
+New route: `/dashboard/challenges/:id/outlines/:outlineId`. New file: `web-app/src/pages/dashboard/dashPages/Outlines/OutlineDetail.tsx`.
 
 Layout per SPEC §3b.2:
 - Header with `why` callout and outline-level progress bar
@@ -463,7 +463,7 @@ When a chat message returns with `kind: "outline"`:
 ### 3b.2 Outline Detail Page
 
 Route: `/dashboard/challenges/:challengeId/outlines/:outlineId`
-File: `web-ui/src/pages/dashboard/dashPages/Outlines/OutlineDetail.tsx`
+File: `web-app/src/pages/dashboard/dashPages/Outlines/OutlineDetail.tsx`
 
 Layout:
 - **Header** — outline title, `why` callout (visually emphasized), outline-level progress bar
@@ -476,13 +476,13 @@ Layout:
 ### 3b.3 Outline List Page
 
 Route: `/dashboard/outlines`
-File: `web-ui/src/pages/dashboard/dashPages/Outlines/OutlineList.tsx`
+File: `web-app/src/pages/dashboard/dashPages/Outlines/OutlineList.tsx`
 
 Lists all outlines for the user, grouped by parent Challenge. Each outline shows title, phase count, progress bar, status badge, and last-updated timestamp.
 
 ### 3b.4 Navigation
 
-Update `web-ui/src/lib/appNavigationData.ts`:
+Update `web-app/src/lib/appNavigationData.ts`:
 - The existing Solutions > Solution Outlines item (currently `url: "#"`) routes to `/dashboard/outlines`
 - Apply the dynamic sub-item pattern used by Challenges so individual outlines show as sidebar children when expanded
 
@@ -516,7 +516,7 @@ Phase 3b is complete when:
 - **Reuse `cleanJsonResponse` from `analysis.ts`** — refactor it into a shared util at `agent-server/src/llm/jsonUtils.ts` and import from both sites.
 - **Single transaction for outline persistence.** Use `prisma.$transaction` to write outline + phases + items atomically.
 - **Don't assume the outline parses on first try.** Log raw response on validation failure for observability.
-- **For 3b: Tailwind only**, no inline styles, no new component libraries beyond what's in `web-ui/src/components/ui/`. Use whatever neumorphic utilities Phase 2 introduces.
+- **For 3b: Tailwind only**, no inline styles, no new component libraries beyond what's in `web-app/src/components/ui/`. Use whatever neumorphic utilities Phase 2 introduces.
 - **Don't touch the existing `Challenge` or `ChallengeCheckIn` models** beyond adding the `solution_outlines` relation field.
 
 # Phase 4 — Document Ingestion & RAG Pipeline

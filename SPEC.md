@@ -6,7 +6,7 @@
 
 ## Stack
 
-- **Frontend:** React, TypeScript (`web-ui`)
+- **Frontend:** React, TypeScript (`web-app`)
 - **Backend API:** Node.js, Express, TypeScript (`bi-app`)
 - **AI/Agent layer:** Node.js, Express, TypeScript (`agent-server`)
 - **Database:** PostgreSQL via Prisma (owned by `bi-app`)
@@ -610,7 +610,7 @@ An "Weekly coaching insights" toggle is added to the AI tab in Settings — when
 
 - **JSON extraction from LLM:** use `agent-server/src/llm/jsonUtils.ts` (`cleanJsonResponse`). Don't introduce parallel utilities.
 - **Multi-step Prisma writes:** use `prisma.$transaction`.
-- **Frontend styling:** Tailwind + neumorphic utilities (`nm-raised`, `nm-inset`, `nm-pressed`) + shadcn primitives in `web-ui/src/components/ui/`. No inline styles. No new component libraries without spec entry.
+- **Frontend styling:** Tailwind + neumorphic utilities (`nm-raised`, `nm-inset`, `nm-pressed`) + shadcn primitives in `web-app/src/components/ui/`. No inline styles. No new component libraries without spec entry.
 - **RAG context vs persona:** persona/tone documents are NEVER ingested into ChromaDB. They live in system prompts only. Mixing them caused the earlier RAG-poisoning incident.
 
 ---
@@ -690,7 +690,7 @@ Decorative colours that are genuinely illustrative (chart series colours, avatar
 
 ### 4. StatusBadge and ProgressBar Components
 
-`web-ui/src/components/StatusBadge.tsx` and `web-ui/src/components/ProgressBar.tsx` are the single source of truth for rendering challenge/outline status and progress.
+`web-app/src/components/StatusBadge.tsx` and `web-app/src/components/ProgressBar.tsx` are the single source of truth for rendering challenge/outline status and progress.
 
 **StatusBadge** — renders a rounded pill badge from a status string. Handles: `ACTIVE`, `PAUSED`, `COMPLETED`, `CANCELLED`, `PENDING`, `DONE`, `PROCESSING`, `DID_NOT_MEET`. Falls back to a muted badge for unknown strings.
 
