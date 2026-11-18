@@ -139,7 +139,7 @@ export async function generateInsights(
   const model = genAI.getGenerativeModel({
     model: 'gemini-3-flash-preview',
     tools: [{ functionDeclarations: TOOL_DECLARATIONS as any }],
-    generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+    generationConfig: { temperature: 0.4, maxOutputTokens: 8192 },
   });
 
   const chat   = model.startChat();

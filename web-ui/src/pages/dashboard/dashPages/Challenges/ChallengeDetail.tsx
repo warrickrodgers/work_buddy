@@ -126,6 +126,11 @@ export function ChallengeDetail() {
 
       if (outlinesRes.data.outlines?.length > 0) {
         setActiveOutline(outlinesRes.data.outlines[0]);
+        // Sync progress from actual outline data (handles retroactive completions)
+        api.post(`/challenges/${id}/sync-progress`)
+          .then(() => api.get(`/challenges/${id}`))
+          .then(r => setChallenge(r.data))
+          .catch(() => {});
       }
 
       if (challengeRes.data.conversation_id) {

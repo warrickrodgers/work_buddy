@@ -90,6 +90,7 @@ function MarkdownTextarea({
 export function CreateChallenge() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ChallengeFormData, string>>>({});
   const [currentStep, setCurrentStep] = useState(1);

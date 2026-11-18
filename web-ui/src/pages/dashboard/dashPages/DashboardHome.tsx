@@ -147,7 +147,7 @@ export function DashboardHome() {
   const handleRefreshInsights = async () => {
     setInsightsRefreshing(true);
     try {
-      const res = await api.post('/insights/generate');
+      const res = await api.post('/insights/generate?force=true');
       const insight = res.data.insight;
       if (insight?.summary) {
         setInsights(insight.summary as InsightCard[]);

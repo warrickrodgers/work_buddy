@@ -9,6 +9,71 @@ const phaseInclude = {
   check_in_prompts:{ orderBy: { order_index: 'asc' as const } },
 };
 
+export async function recomputeProgressForChallenge(challengeId: number): Promise<void> {
+  try {
+    const latestOutline = await prisma.solutionOutline.findFirst({
+      where: { challenge_id: challengeId },
+      orderBy: { created_at: 'desc' },
+      include: {
+        phases: {
+          include: {
+            checklist_items: true,
+            habits: { include: { logs: true } },
+            check_in_prompts: true,
+          },
+        },
+      },
+    });
+
+    if (!latestOutline || latestOutline.phases.length === 0) return;
+
+    let phaseScoreSum = 0;
+
+    for (const p of latestOutline.phases) {
+      const checklistTotal = p.checklist_items.length;
+      const checklistDone  = p.checklist_items.filter(i => i.is_complete).length;
+
+      const habitTotal      = p.habits.length;
+      const habitsWithLogs  = p.habits.filter(h => h.logs.length > 0).length;
+
+      const checkInTotal = p.check_in_prompts.length;
+      const checkInsDone = p.check_in_prompts.filter(c => (c as any).response).length;
+
+      let weightSum = 0;
+      let scoreSum  = 0;
+      if (checklistTotal > 0) { scoreSum += (checklistDone / checklistTotal) * 0.4; weightSum += 0.4; }
+      if (habitTotal > 0)     { scoreSum += (habitsWithLogs / habitTotal) * 0.4;    weightSum += 0.4; }
+      if (checkInTotal > 0)   { scoreSum += (checkInsDone / checkInTotal) * 0.2;    weightSum += 0.2; }
+
+      phaseScoreSum += weightSum > 0 ? scoreSum / weightSum : 0;
+    }
+
+    const progress = Math.min(100, Math.max(0,
+      Math.round((phaseScoreSum / latestOutline.phases.length) * 100),
+    ));
+
+    await prisma.challenge.update({
+      where: { id: challengeId },
+      data:  { progress },
+    });
+  } catch (err) {
+    console.error('recomputeProgressForChallenge failed:', err);
+  }
+}
+
+async function recomputeChallengeProgress(phaseId: number): Promise<void> {
+  try {
+    const phase = await prisma.outlinePhase.findUnique({
+      where: { id: phaseId },
+      select: { outline: { select: { challenge_id: true } } },
+    });
+    const challengeId = (phase as any)?.outline?.challenge_id;
+    if (challengeId) await recomputeProgressForChallenge(challengeId);
+  } catch (err) {
+    console.error('recomputeChallengeProgress failed:', err);
+  }
+}
+
 // Verify that an outline belongs to the requesting user via its challenge
 async function ownsOutline(outlineId: number, userId: number): Promise<boolean> {
   const outline = await prisma.solutionOutline.findUnique({
@@ -83,6 +148,7 @@ export const toggleChecklistItem = async (req: Request, res: Response) => {
     });
 
     res.json({ item });
+    recomputeChallengeProgress(existing.phase.id);
   } catch (error) {
     console.error('Error toggling checklist item:', error);
     res.status(500).json({ error: 'Failed to update checklist item' });
@@ -116,6 +182,7 @@ export const logHabit = async (req: Request, res: Response) => {
     });
 
     res.status(log ? 200 : 201).json({ log });
+    recomputeChallengeProgress(habit.phase.id);
   } catch (error) {
     console.error('Error logging habit:', error);
     res.status(500).json({ error: 'Failed to log habit' });
@@ -147,6 +214,7 @@ export const respondToCheckIn = async (req: Request, res: Response) => {
     });
 
     res.json({ prompt });
+    recomputeChallengeProgress(existing.phase.id);
   } catch (error) {
     console.error('Error saving check-in response:', error);
     res.status(500).json({ error: 'Failed to save response' });

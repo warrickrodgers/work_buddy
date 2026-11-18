@@ -222,6 +222,9 @@ export const streamMessageToConversation = async (req: Request, res: Response) =
           if (parsed.kind === 'outline' && conversation.challenge_id) {
             const outline = await persistOutline(conversation.challenge_id, conversation.user_id, parsed.outline);
             extra = { kind: 'outline', outlineId: outline.id, preamble: parsed.preamble, outline: parsed.outline };
+          } else if (parsed.kind === 'outline' && !conversation.challenge_id) {
+            // General chat — forward outline draft so the frontend can offer challenge creation
+            extra = { kind: 'outline', preamble: parsed.preamble, outline: parsed.outline };
           }
 
           const assistantMessage = await prisma.chatMessage.create({

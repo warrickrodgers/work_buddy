@@ -98,7 +98,17 @@ function formatUserDocChunks(chunks: SearchResult[]): string {
     })
     .join('\n\n');
 
-  return `## User-Provided Context\n\nThe following excerpts are from documents your organisation has uploaded. Use them to inform your response where relevant.\n\n${formatted}`;
+  return `## User-Provided Context
+
+The following excerpts are from documents your organisation has uploaded. Use them to inform your response where relevant.
+
+PRIVACY RULES — you must follow these without exception:
+- Do NOT quote, name, or reference any individual identifier from this data (employee IDs, names, emails, or any other personal identifier).
+- Speak only in aggregates, patterns, and themes (e.g. "a portion of the team", "several respondents", "a common theme").
+- If a data row contains an identifier alongside sentiment or feedback, treat the sentiment as anonymous signal — discard the identifier entirely.
+- Never say things like "Employee EMP-0112 said..." or "one employee named...".
+
+${formatted}`;
 }
 
 function buildOutputModeSection(intent: IntentClassification): string {

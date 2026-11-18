@@ -1,11 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ChatMessage } from '@/components/ChatMessage';
-import { Bot, User, ArrowUp, Loader2 } from 'lucide-react';
+import { Bot, User, ArrowUp, Loader2, BookOpen, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
 import { streamChatMessage, type StreamEvent } from '@/lib/streamChat';
 import api from '@/lib/api';
+
+interface OutlineDraft {
+  title: string;
+  why: string;
+  phases: any[];
+}
 
 interface Message {
   id: string;
@@ -13,6 +20,7 @@ interface Message {
   content: string;
   timestamp: Date;
   streaming?: boolean;
+  outlineDraft?: OutlineDraft;
 }
 
 interface ConversationCache {
@@ -25,12 +33,14 @@ const CACHE_DURATION = 5 * 60 * 1000;
 
 export function WorkBuddyChat() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const userId = user?.id;
   const [messages, setMessages]           = useState<Message[]>([]);
   const [input, setInput]                 = useState('');
   const [isStreaming, setIsStreaming]      = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [isLoading, setIsLoading]         = useState(true);
+  const [creatingChallenge, setCreatingChallenge] = useState<Set<string>>(new Set());
   const messagesEndRef  = useRef<HTMLDivElement>(null);
   const textareaRef     = useRef<HTMLTextAreaElement>(null);
   const abortRef        = useRef<AbortController | null>(null);
@@ -130,6 +140,26 @@ export function WorkBuddyChat() {
 
   const STREAMING_ID = 'streaming-assistant';
 
+  const createChallengeFromOutline = async (messageId: string, outline: OutlineDraft) => {
+    setCreatingChallenge(prev => new Set([...prev, messageId]));
+    try {
+      const res = await api.post('/challenges', {
+        user_id: user!.id,
+        title: outline.title,
+        description: outline.why,
+        category: 'LEADERSHIP',
+        challenge_type: 'BEHAVIOR',
+        audience_type: 'INDIVIDUAL',
+        start_date: new Date().toISOString().split('T')[0],
+        success_criteria: outline.phases?.[0]?.purpose ?? 'Complete the outlined plan',
+      });
+      navigate('/dashboard/challenges', { state: { newChallengeId: res.data.id } });
+    } catch (err) {
+      console.error('Failed to create challenge:', err);
+      setCreatingChallenge(prev => { const n = new Set(prev); n.delete(messageId); return n; });
+    }
+  };
+
   const handleSend = useCallback(async () => {
     if (!input.trim() || !conversationId || isStreaming) return;
 
@@ -160,10 +190,18 @@ export function WorkBuddyChat() {
               m.id === STREAMING_ID ? { ...m, content: m.content + event.text } : m
             ));
           } else if (event.type === 'done') {
-            const finalContent = event.kind === 'outline' ? (event.preamble ?? '') : undefined;
+            const isOutline = event.kind === 'outline' && event.outline;
+            const finalContent = isOutline ? (event.preamble ?? '') : undefined;
             setMessages(prev => prev.map(m =>
               m.id === STREAMING_ID
-                ? { ...m, id: event.messageId.toString(), streaming: false, timestamp: new Date(event.createdAt), ...(finalContent !== undefined ? { content: finalContent } : {}) }
+                ? {
+                    ...m,
+                    id: event.messageId.toString(),
+                    streaming: false,
+                    timestamp: new Date(event.createdAt),
+                    ...(finalContent !== undefined ? { content: finalContent } : {}),
+                    ...(isOutline ? { outlineDraft: event.outline } : {}),
+                  }
                 : m
             ));
           } else if (event.type === 'error') {
@@ -233,8 +271,8 @@ export function WorkBuddyChat() {
           )}
 
           {messages.map(message => (
+            <div key={message.id} className="space-y-3">
             <div
-              key={message.id}
               className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
             >
               {/* Avatar */}
@@ -269,6 +307,34 @@ export function WorkBuddyChat() {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Outline draft — offer challenge creation */}
+            {message.outlineDraft && (
+              <div className="ml-10 flex items-start gap-3 px-4 py-3 rounded-2xl border border-primary/20 bg-primary/5">
+                <BookOpen className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{message.outlineDraft.title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{message.outlineDraft.why}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {message.outlineDraft.phases?.length ?? 0} phases ·{' '}
+                    {message.outlineDraft.phases?.reduce((s: number, p: any) =>
+                      s + (p.checklist_items?.length ?? 0) + (p.habits?.length ?? 0), 0) ?? 0} actions
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  className="flex-shrink-0 h-8 text-xs gap-1 rounded-xl"
+                  disabled={creatingChallenge.has(message.id)}
+                  onClick={() => createChallengeFromOutline(message.id, message.outlineDraft!)}
+                >
+                  {creatingChallenge.has(message.id)
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <><span>Create challenge</span><ArrowRight className="w-3.5 h-3.5" /></>
+                  }
+                </Button>
+              </div>
+            )}
             </div>
           ))}
 

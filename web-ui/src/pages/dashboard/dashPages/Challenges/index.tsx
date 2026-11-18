@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, MessageCircle, Calendar, Target } from 'lucide-react';
@@ -21,14 +22,30 @@ interface Challenge {
 
 export function ChallengeDashboard() {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [newChallengeId, setNewChallengeId] = useState<number | null>(
+    (location.state as any)?.newChallengeId ?? null
+  );
 
   useEffect(() => {
     if (user) {
       loadChallenges();
     }
   }, [user]);
+
+  // Clear the highlight after 2.5 s
+  useEffect(() => {
+    if (!newChallengeId) return;
+    const t = setTimeout(() => {
+      setNewChallengeId(null);
+      // Wipe state so a back-nav doesn't re-highlight
+      navigate(location.pathname, { replace: true, state: {} });
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [newChallengeId]);
 
   const loadChallenges = async () => {
     try {
@@ -42,11 +59,11 @@ export function ChallengeDashboard() {
   };
 
   const handleCreateChallenge = () => {
-    window.location.href = '/dashboard/challenges/createchallenge';
+    navigate('/dashboard/challenges/createchallenge');
   };
 
   const handleViewChallenge = (challengeId: number) => {
-    window.location.href = `/dashboard/challenges/${challengeId}`;
+    navigate(`/dashboard/challenges/${challengeId}`);
   };
 
   if (!user) {
@@ -113,7 +130,7 @@ export function ChallengeDashboard() {
         </div>
 
         {/* Challenges Grid */}
-        {challenges.length === 0 ? (
+        {!isLoading && challenges.length === 0 && !newChallengeId ? (
           <Card className="nm-raised border-0 p-12 text-center">
             <Target className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold text-foreground mb-2">No Challenges Yet</h3>
@@ -125,10 +142,29 @@ export function ChallengeDashboard() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Processing skeleton — shown while the new challenge is loading */}
+            {isLoading && newChallengeId && (
+              <Card className="nm-raised border-0 border-2 border-primary/30 animate-pulse">
+                <CardHeader>
+                  <div className="h-5 w-24 bg-muted rounded mb-2" />
+                  <div className="h-5 w-3/4 bg-muted rounded" />
+                  <div className="h-4 w-full bg-muted rounded mt-1" />
+                </CardHeader>
+                <CardContent>
+                  <div className="h-2 w-full bg-muted rounded mb-4" />
+                  <div className="h-4 w-1/2 bg-muted rounded mb-4" />
+                  <div className="h-9 w-full bg-muted rounded" />
+                </CardContent>
+              </Card>
+            )}
             {challenges.map((challenge) => (
               <Card
                 key={challenge.id}
-                className="nm-raised border-0 hover:brightness-95 dark:hover:brightness-110 transition-all cursor-pointer"
+                className={`nm-raised border-0 hover:brightness-95 dark:hover:brightness-110 transition-all cursor-pointer ${
+                  challenge.id === newChallengeId
+                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background animate-in fade-in duration-500'
+                    : ''
+                }`}
                 onClick={() => handleViewChallenge(challenge.id)}
               >
                 <CardHeader>

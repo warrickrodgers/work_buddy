@@ -18,17 +18,21 @@ export const generateInsights = async (req: Request, res: Response) => {
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // Return cached if fresh
-    const cached = await prisma.insight.findFirst({
-      where: {
-        user_id: userId,
-        generated_at: { gte: new Date(Date.now() - CACHE_TTL_MS) },
-      },
-      orderBy: { generated_at: 'desc' },
-    });
+    const force = req.query.force === 'true';
 
-    if (cached) {
-      return res.json({ insight: cached, cached: true });
+    // Return cached if fresh (unless force-refresh requested)
+    if (!force) {
+      const cached = await prisma.insight.findFirst({
+        where: {
+          user_id: userId,
+          generated_at: { gte: new Date(Date.now() - CACHE_TTL_MS) },
+        },
+        orderBy: { generated_at: 'desc' },
+      });
+
+      if (cached) {
+        return res.json({ insight: cached, cached: true });
+      }
     }
 
     // Generate via agent-server

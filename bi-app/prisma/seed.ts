@@ -9,6 +9,13 @@ async function main() {
     const plainPassword = 'password123' // 🔑 what you’ll log in with in dev
     const passwordHash = await bcrypt.hash(plainPassword, 12) // 12 salt rounds is standard
 
+    let testOrg = await prisma.organisation.findFirst({ where: { name: 'WorkBuddy Dev' } });
+    if (!testOrg) {
+        testOrg = await prisma.organisation.create({
+            data: { name: 'WorkBuddy Dev', is_personal: true },
+        });
+    }
+
     const testUser = await prisma.user.upsert({
         where: { email: 'test@workbuddy.io' },
         update: {},
@@ -20,6 +27,7 @@ async function main() {
             company: 'WorkBuddy',
             password_hash: passwordHash,
             auth_method: 'none',
+            organisation_id: testOrg.id,
         },
     })
     const problem = await prisma.problemRequest.upsert({
