@@ -6,7 +6,8 @@
 
 ## Stack
 
-- **Frontend:** React, TypeScript (`web-app`)
+- **Authenticated app:** React, TypeScript (`web-app`, port 5173)
+- **Marketing site:** React, TypeScript (`landing-site`, port 5174, fully static)
 - **Backend API:** Node.js, Express, TypeScript (`bi-app`)
 - **AI/Agent layer:** Node.js, Express, TypeScript (`agent-server`)
 - **Database:** PostgreSQL via Prisma (owned by `bi-app`)

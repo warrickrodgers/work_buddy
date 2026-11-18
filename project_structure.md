@@ -132,7 +132,17 @@
 │       │   └── agentClient.ts
 │       └── types/
 │           └── index.ts
-└── web-app/
+├── landing-site/            ← standalone marketing site (port 5174)
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tsconfig.json
+│   ├── index.html
+│   └── src/
+│       ├── pages/Home.tsx
+│       ├── components/ui/button.tsx
+│       ├── lib/utils.ts
+│       └── index.css
+└── web-app/                 ← authenticated app (port 5173)
     ├── components.json
     ├── eslint.config.js
     ├── index.html

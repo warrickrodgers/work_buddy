@@ -25,7 +25,8 @@ work_buddy/
 ├── architecture.md          ← This document
 ├── README.md
 ├── project_structure.md
-├── web-app/                 ← React/Vite authenticated app (user interface)
+├── web-app/                 ← React/Vite authenticated app  (port 5173, deploys to app.<domain>)
+├── landing-site/            ← Static marketing site         (port 5174, deploys to root domain)
 ├── bi-app/                  ← Business intelligence API (orchestration layer)
 └── agent-server/            ← AI agent service (Simon — LLM + vector memory)
 ```
@@ -43,12 +44,17 @@ The three services are independently deployable Node.js applications that commun
                             │ HTTPS
                             ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                     web-app  (React / Vite)                      │
+│          web-app (React / Vite — authenticated app)              │
 │                         Port 5173                                │
 │  - Authentication pages (Login, SignUp, Forgot Password)         │
 │  - Dashboard with sidebar navigation                             │
 │  - Chat interface (Simon / WorkBuddyChat)                        │
 │  - Data upload interface                                         │
+│                                                                  │
+│          landing-site (React / Vite — marketing, static)         │
+│                         Port 5174                                │
+│  - Public marketing pages (no API calls, no auth)                │
+│  - CTAs link to web-app /login and /signup                       │
 └───────────────────────────┬──────────────────────────────────────┘
                             │ REST API  /api/*
                             ▼
@@ -89,7 +95,13 @@ The three services are independently deployable Node.js applications that commun
 
 ## Service Detail: web-app
 
-**Stack:** React 18 · TypeScript · Vite · Tailwind CSS · shadcn/ui · React Router
+**Stack:** React 19 · TypeScript · Vite · Tailwind CSS v4 · shadcn/ui · React Router
+
+## Service Detail: landing-site
+
+**Stack:** React 19 · TypeScript · Vite · Tailwind CSS v4 · no router (single page)
+
+Fully static — no API calls, no AuthContext, no axios. All CTAs link to `${VITE_APP_URL}/login` and `${VITE_APP_URL}/signup`. Shares no packages with web-app; Button component and CSS tokens are copied.
 
 ### Pages & Components
 
@@ -384,7 +396,8 @@ The knowledge base encodes nine leadership frameworks Simon draws upon:
 
 | Service | Port |
 |---------|------|
-| web-app | 5173 |
+| web-app      | 5173 |
+| landing-site | 5174 |
 | bi-app | 3000 |
 | agent-server | 4000 |
 | ChromaDB | 8000 |
