@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -25,9 +25,11 @@ const FormSchema = z.object({
 type FormValues = z.infer<typeof FormSchema>;
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [loginError, setLoginError] = useState<string | null>(null);
+
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
   const [loginLoading, setLoginLoading] = useState(false);
 
   const [ssoEmail, setSsoEmail] = useState('');

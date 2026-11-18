@@ -1,5 +1,4 @@
-import {BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
+import {BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import SignUp from './pages/auth/SignUp';
 import Login from './pages/auth/Login';
 import ForgotPassword from './pages/auth/ForgotPassowrd';
@@ -9,7 +8,6 @@ import Dashboard from './pages/dashboard/Dashboard';
 import './App.css'
 import UploadsInsetPage  from './pages/dashboard/dashPages/Uploads/Uploads';
 import NewUploadInsetPage from './pages/dashboard/dashPages/Uploads/NewUpload';
-import './App.css';
 import { CreateChallenge } from './pages/dashboard/dashPages/Challenges/CreateChallenge';
 import { ChallengeDashboard } from './pages/dashboard/dashPages/Challenges';
 import { ChallengeDetail } from './pages/dashboard/dashPages/Challenges/ChallengeDetail';
@@ -27,7 +25,7 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path='/' element={< Home/>}></Route>
+          <Route path='/' element={<Navigate to="/login" replace />} />
           <Route path="/signup" element={< SignUp/>}></Route>
           <Route path="/login" element={< Login/>}></Route>
           <Route path="/forgotPassword" element={< ForgotPassword/>}></Route>
