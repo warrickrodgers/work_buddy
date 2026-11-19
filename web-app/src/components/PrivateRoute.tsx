@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
+import type { ReactElement } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 
 interface Props {
-  children: JSX.Element;
+  children: ReactElement;
   allowIncomplete?: boolean;
 }
 
 const PrivateRoute = ({ children, allowIncomplete = false }: Props) => {
-  const { login, user } = useAuth();
+  const { login, logout, user } = useAuth();
   const [status, setStatus] = useState<'checking' | 'valid' | 'invalid'>('checking');
 
   useEffect(() => {
@@ -20,6 +21,7 @@ const PrivateRoute = ({ children, allowIncomplete = false }: Props) => {
         login(localStorage.getItem('authToken')!, res.data.user);
         setStatus('valid');
       } catch {
+        logout();
         setStatus('invalid');
       }
     };

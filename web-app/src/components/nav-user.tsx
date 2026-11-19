@@ -7,9 +7,7 @@ import {
   CreditCard,
   LogOut,
   Moon,
-  Sparkles,
   Sun,
-  User,
 } from "lucide-react"
 import {
   Avatar,

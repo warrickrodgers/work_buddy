@@ -230,7 +230,7 @@ export function ChallengeDetail() {
       abortRef.current = new AbortController();
 
       await streamChatMessage(
-        conversationId,
+        conversationId!,
         messageText,
         (event: StreamEvent) => {
           if (event.type === 'delta') {

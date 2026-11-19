@@ -10,7 +10,6 @@ import {
   TrendingUp,
   ChevronRight,
   Quote,
-  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 

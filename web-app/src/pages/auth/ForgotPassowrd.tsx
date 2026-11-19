@@ -6,7 +6,6 @@ import { z } from "zod"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -15,7 +14,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { useNavigate } from 'react-router-dom';
 
 
 
@@ -29,7 +27,6 @@ const FormSchema = z.object({
 })
 
 export default function ForgotPassword() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("")
   
 
@@ -72,7 +69,7 @@ export default function ForgotPassword() {
                 <FormField
                   control={form.control}
                   name="username"
-                  render={({ field }) => (
+                  render={({ field: _field }) => (
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>

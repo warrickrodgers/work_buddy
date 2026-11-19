@@ -28,10 +28,7 @@ export default function Login() {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [loginError, setLoginError] = useState<string | null>(null);
-
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
   const [loginLoading, setLoginLoading] = useState(false);
-
   const [ssoEmail, setSsoEmail] = useState('');
   const [ssoError, setSsoError] = useState<string | null>(null);
   const [ssoLoading, setSsoLoading] = useState(false);
@@ -82,6 +79,8 @@ export default function Login() {
       setSsoLoading(false);
     }
   };
+
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900">
